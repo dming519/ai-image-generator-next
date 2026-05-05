@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { generateImage } from "@/lib/api";
 import { dbAdd, dbAll, dbClear, dbDel } from "@/lib/db";
-import type { HistoryItem, ImageSize } from "@/lib/types";
+import type { HistoryItem, ImageMode, ImageSize } from "@/lib/types";
 import { usePersistentInput } from "@/hooks/usePersistentInput";
 import HistoryGrid from "./HistoryGrid";
 import Lightbox from "./Lightbox";
@@ -12,6 +12,17 @@ import Stage from "./Stage";
 
 const DEFAULT_PROMPT =
   "为我生成一张治愈风格的插画，主体是一只在窗台上看雨的橘猫，水彩质感，柔和暖色调";
+
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 单张图片 8MB 上限
+
+function fileToDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function ImageGenerator() {
   const [baseUrl, setBaseUrl] = usePersistentInput(
@@ -28,12 +39,15 @@ export default function ImageGenerator() {
     DEFAULT_PROMPT,
   );
 
+  const [mode, setMode] = useState<ImageMode>("generate");
   const [size, setSize] = useState<ImageSize>("1024x1536");
+  const [inputImages, setInputImages] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeIdx, setActiveIdx] = useState(-1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 初始加载 IndexedDB
   useEffect(() => {
@@ -53,11 +67,55 @@ export default function ImageGenerator() {
     };
   }, []);
 
+  const handleSelectFiles = useCallback(
+    async (files: FileList | null) => {
+      if (!files || !files.length) return;
+      setError(null);
+      const accepted: string[] = [];
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) {
+          setError(`已忽略非图片文件：${file.name}`);
+          continue;
+        }
+        if (file.size > MAX_IMAGE_BYTES) {
+          setError(`图片过大（>8MB）已忽略：${file.name}`);
+          continue;
+        }
+        try {
+          accepted.push(await fileToDataURL(file));
+        } catch (e) {
+          console.warn("读取图片失败:", e);
+        }
+      }
+      if (accepted.length) {
+        setInputImages((prev) => [...prev, ...accepted]);
+      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [],
+  );
+
+  const handleRemoveImage = useCallback((idx: number) => {
+    setInputImages((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const handleClearImages = useCallback(() => {
+    setInputImages([]);
+  }, []);
+
+  const handleSwitchMode = useCallback((next: ImageMode) => {
+    setMode(next);
+    setError(null);
+  }, []);
+
   const handleGenerate = useCallback(async () => {
     setError(null);
     if (!apiKey.trim()) return setError("请输入 API Key");
     if (!baseUrl.trim()) return setError("请输入 Base URL");
-    if (!prompt.trim()) return setError("请输入提示词");
+    if (!prompt.trim() && mode === "generate")
+      return setError("请输入提示词");
+    if (mode === "edit" && inputImages.length === 0)
+      return setError("编辑模式必须上传至少一张源图片");
 
     setBusy(true);
     try {
@@ -67,6 +125,8 @@ export default function ImageGenerator() {
         model: model.trim(),
         prompt: prompt.trim(),
         size,
+        mode,
+        inputImages,
       });
 
       const item: HistoryItem = {
@@ -74,6 +134,7 @@ export default function ImageGenerator() {
         prompt: prompt.trim(),
         model: model.trim() || "gpt-5.4",
         size,
+        mode,
         timestamp: Date.now(),
       };
 
@@ -94,7 +155,7 @@ export default function ImageGenerator() {
     } finally {
       setBusy(false);
     }
-  }, [apiKey, baseUrl, model, prompt, size]);
+  }, [apiKey, baseUrl, model, prompt, size, mode, inputImages]);
 
   const handleDelete = useCallback((idx: number) => {
     setHistory((h) => {
@@ -152,11 +213,14 @@ export default function ImageGenerator() {
     if (activeIdx >= 0) setLightboxIdx(activeIdx);
   }, [activeIdx]);
 
+  const editButtonDisabled =
+    busy || (mode === "edit" && inputImages.length === 0);
+
   return (
     <main className="wrap">
       <h1>🎨 AI 图片生成器</h1>
       <p className="tagline">
-        基于 OpenAI Responses API，在浏览器中直接生成图片
+        基于 OpenAI Responses API，在浏览器中直接生成 / 编辑图片
       </p>
 
       <section className="panel">
@@ -192,13 +256,96 @@ export default function ImageGenerator() {
           onChange={(e) => setApiKey(e.target.value)}
         />
 
+        <label>模式</label>
+        <div className="mode-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "generate"}
+            className={`mode-tab${mode === "generate" ? " is-active" : ""}`}
+            onClick={() => handleSwitchMode("generate")}
+          >
+            ✨ 生成图片
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "edit"}
+            className={`mode-tab${mode === "edit" ? " is-active" : ""}`}
+            onClick={() => handleSwitchMode("edit")}
+          >
+            🖌️ 编辑图片
+          </button>
+        </div>
+
+        <label>
+          {mode === "edit" ? "源图片（必填）" : "参考图片（可选）"}
+        </label>
+        <div className="upload-row">
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            📁 选择图片
+          </button>
+          {inputImages.length > 0 && (
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={handleClearImages}
+            >
+              清空
+            </button>
+          )}
+          <span className="upload-hint">
+            支持多张，单张 ≤ 8MB；
+            {mode === "edit"
+              ? "编辑模式至少 1 张"
+              : "可不上传，仅作为生成参考"}
+          </span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => handleSelectFiles(e.target.files)}
+          />
+        </div>
+
+        {inputImages.length > 0 && (
+          <div className="thumbs">
+            {inputImages.map((src, i) => (
+              <div className="thumb" key={i}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={`输入图 ${i + 1}`} />
+                <button
+                  type="button"
+                  className="thumb-del"
+                  aria-label="移除"
+                  onClick={() => handleRemoveImage(i)}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <label>图片尺寸</label>
         <SizeSelector value={size} onChange={setSize} />
 
-        <label htmlFor="f-prompt">提示词</label>
+        <label htmlFor="f-prompt">
+          {mode === "edit" ? "编辑指令" : "提示词"}
+        </label>
         <textarea
           id="f-prompt"
-          placeholder="描述你想生成的图片..."
+          placeholder={
+            mode === "edit"
+              ? "描述你希望对源图片做的调整，例如：把背景换成樱花林，并加上柔和暖色光"
+              : "描述你想生成的图片..."
+          }
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
         />
@@ -207,9 +354,9 @@ export default function ImageGenerator() {
           className="btn-primary"
           type="button"
           onClick={handleGenerate}
-          disabled={busy}
+          disabled={editButtonDisabled}
         >
-          ✨ 生成图片
+          {mode === "edit" ? "🖌️ 开始编辑" : "✨ 生成图片"}
         </button>
       </section>
 

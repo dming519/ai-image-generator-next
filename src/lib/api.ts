@@ -10,10 +10,46 @@ interface ResponsesPayload {
   error?: { message?: string };
 }
 
+type InputContent =
+  | { type: "input_text"; text: string }
+  | { type: "input_image"; image_url: string };
+
+interface InputMessage {
+  role: "user";
+  content: InputContent[];
+}
+
 export async function generateImage(opts: GenerateOptions): Promise<string> {
   const url = opts.baseUrl.replace(/\/+$/, "") + "/responses";
+
   const tool: { type: string; size?: string } = { type: "image_generation" };
   if (opts.size !== "auto") tool.size = opts.size;
+
+  const images = (opts.inputImages ?? []).filter(Boolean);
+
+  if (opts.mode === "edit" && images.length === 0) {
+    throw new Error("编辑模式需要至少上传一张源图片");
+  }
+
+  let input: string | InputMessage[];
+
+  if (images.length === 0) {
+    // 纯文本生成
+    input = opts.prompt;
+  } else {
+    // 带参考图/源图：使用消息数组形式
+    const promptText =
+      opts.mode === "edit"
+        ? opts.prompt ||
+          "请根据上述源图片进行编辑，保留主体的同时根据后续要求作出调整"
+        : opts.prompt;
+
+    const content: InputContent[] = [{ type: "input_text", text: promptText }];
+    for (const img of images) {
+      content.push({ type: "input_image", image_url: img });
+    }
+    input = [{ role: "user", content }];
+  }
 
   const resp = await fetch(url, {
     method: "POST",
@@ -23,7 +59,7 @@ export async function generateImage(opts: GenerateOptions): Promise<string> {
     },
     body: JSON.stringify({
       model: opts.model || "gpt-5.4",
-      input: opts.prompt,
+      input,
       tools: [tool],
     }),
   });
