@@ -10,8 +10,10 @@ import Lightbox from "./Lightbox";
 import SizeSelector from "./SizeSelector";
 import Stage from "./Stage";
 
-const DEFAULT_PROMPT =
-  "为我生成一张治愈风格的插画，主体是一只在窗台上看雨的橘猫，水彩质感，柔和暖色调";
+const DEFAULT_PROMPT = `为我生成图中角色的绘制 Q 版的，LINE 风格的半身像表情包，注意头饰要正确
+彩色手绘风格，使用 4x6 布局，涵盖各种各样的常用聊天语句，或是一些有关的娱乐 meme
+其他需求：不要原图复制。所有标注为手写简体中文。
+生成的图片需为 2K 分辨率 16:9`;
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 单张图片 8MB 上限
 
