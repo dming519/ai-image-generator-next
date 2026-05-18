@@ -115,6 +115,58 @@ textarea {
   gap: 16px;
 }
 
+.config-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  padding: 14px 16px;
+  cursor: pointer;
+  font: inherit;
+  margin-bottom: 10px;
+}
+
+.config-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.config-toggle-meta {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.config-toggle-icon {
+  color: #c8c8d4;
+  font-size: 0.82em;
+}
+
+.config-summary {
+  color: var(--muted);
+  font-size: 0.82em;
+  margin-bottom: 18px;
+  word-break: break-word;
+}
+
+.config-notice {
+  color: #c8c8d4;
+  font-size: 0.85em;
+  line-height: 1.6;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.advanced-config {
+  margin-bottom: 8px;
+}
+
 .size-row {
   display: flex;
   flex-wrap: wrap;

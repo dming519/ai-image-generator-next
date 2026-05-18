@@ -1,4 +1,9 @@
 import type { GenerateOptions } from "./types";
+import {
+  DEFAULT_PROXY_PATH,
+  resolveBaseUrl,
+  resolveModel,
+} from "./config";
 
 interface ResponseOutput {
   type: string;
@@ -10,6 +15,12 @@ interface ResponsesPayload {
   error?: { message?: string };
 }
 
+interface ProxyPayload {
+  base64?: string;
+  model?: string;
+  error?: string;
+}
+
 type InputContent =
   | { type: "input_text"; text: string }
   | { type: "input_image"; image_url: string };
@@ -19,8 +30,12 @@ interface InputMessage {
   content: InputContent[];
 }
 
-export async function generateImage(opts: GenerateOptions): Promise<string> {
-  const url = opts.baseUrl.replace(/\/+$/, "") + "/responses";
+export async function generateImage(
+  opts: GenerateOptions,
+): Promise<{ base64: string; model: string }> {
+  const baseUrl = resolveBaseUrl(opts.baseUrl);
+  const model = resolveModel(opts.model);
+  const apiKey = opts.apiKey?.trim();
 
   const tool: { type: string; size?: string } = { type: "image_generation" };
   if (opts.size !== "auto") tool.size = opts.size;
@@ -51,29 +66,64 @@ export async function generateImage(opts: GenerateOptions): Promise<string> {
     input = [{ role: "user", content }];
   }
 
-  const resp = await fetch(url, {
+  const requestBody = {
+    baseUrl,
+    model,
+    prompt: opts.prompt,
+    size: opts.size,
+    mode: opts.mode,
+    inputImages: images,
+  };
+
+  const resp = await fetch(apiKey ? baseUrl.replace(/\/+$/, "") + "/responses" : DEFAULT_PROXY_PATH, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${opts.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: opts.model || "gpt-5.4",
-      input,
-      tools: [tool],
-    }),
+    headers: apiKey
+      ? {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        }
+      : {
+          "Content-Type": "application/json",
+        },
+    body: JSON.stringify(
+      apiKey
+        ? {
+            model,
+            input,
+            tools: [tool],
+          }
+        : requestBody,
+    ),
   });
 
   if (!resp.ok) {
     const text = await resp.text();
     let detail = text.slice(0, 300);
     try {
-      const j = JSON.parse(text) as ResponsesPayload;
-      if (j?.error?.message) detail = j.error.message;
+      const j = JSON.parse(text) as ResponsesPayload | ProxyPayload;
+      if ("error" in j && typeof j.error === "string") detail = j.error;
+      else if (
+        "error" in j &&
+        typeof j.error === "object" &&
+        j.error?.message
+      ) {
+        detail = j.error.message;
+      }
     } catch {
       // 保留原始 text
     }
     throw new Error(`HTTP ${resp.status}: ${detail}`);
+  }
+
+  if (!apiKey) {
+    const data = (await resp.json()) as ProxyPayload;
+    if (!data.base64) {
+      throw new Error("代理接口返回成功但缺少图片数据");
+    }
+    return {
+      base64: data.base64,
+      model: data.model || model,
+    };
   }
 
   const data = (await resp.json()) as ResponsesPayload;
@@ -86,5 +136,8 @@ export async function generateImage(opts: GenerateOptions): Promise<string> {
         JSON.stringify(data).slice(0, 500),
     );
   }
-  return calls[0].result;
+  return {
+    base64: calls[0].result,
+    model,
+  };
 }

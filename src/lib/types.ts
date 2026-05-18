@@ -13,9 +13,9 @@ export interface HistoryItem {
 }
 
 export interface GenerateOptions {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
+  baseUrl?: string;
+  apiKey?: string;
+  model?: string;
   prompt: string;
   size: ImageSize;
   mode: ImageMode;

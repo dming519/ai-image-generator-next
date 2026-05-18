@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { generateImage } from "@/lib/api";
+import { DEFAULT_BASE_URL, DEFAULT_MODEL } from "@/lib/config";
 import { dbAdd, dbAll, dbClear, dbDel } from "@/lib/db";
 import type { HistoryItem, ImageMode, ImageSize } from "@/lib/types";
 import { usePersistentInput } from "@/hooks/usePersistentInput";
@@ -27,14 +28,8 @@ function fileToDataURL(file: File): Promise<string> {
 }
 
 export default function ImageGenerator() {
-  const [baseUrl, setBaseUrl] = usePersistentInput(
-    "imggen_f-base",
-    "https://anyrouter.top/v1",
-  );
-  const [model, setModel] = usePersistentInput(
-    "imggen_f-model",
-    "gpt-5.3-codex",
-  );
+  const [baseUrl, setBaseUrl] = usePersistentInput("imggen_f-base", "");
+  const [model, setModel] = usePersistentInput("imggen_f-model", "");
   const [apiKey, setApiKey] = usePersistentInput("imggen_f-key", "");
   const [prompt, setPrompt] = usePersistentInput(
     "imggen_f-prompt",
@@ -49,6 +44,7 @@ export default function ImageGenerator() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 初始加载 IndexedDB
@@ -112,8 +108,6 @@ export default function ImageGenerator() {
 
   const handleGenerate = useCallback(async () => {
     setError(null);
-    if (!apiKey.trim()) return setError("请输入 API Key");
-    if (!baseUrl.trim()) return setError("请输入 Base URL");
     if (!prompt.trim() && mode === "generate")
       return setError("请输入提示词");
     if (mode === "edit" && inputImages.length === 0)
@@ -121,10 +115,10 @@ export default function ImageGenerator() {
 
     setBusy(true);
     try {
-      const base64 = await generateImage({
-        baseUrl: baseUrl.trim(),
-        apiKey: apiKey.trim(),
-        model: model.trim(),
+      const result = await generateImage({
+        baseUrl,
+        apiKey,
+        model,
         prompt: prompt.trim(),
         size,
         mode,
@@ -132,9 +126,9 @@ export default function ImageGenerator() {
       });
 
       const item: HistoryItem = {
-        base64,
+        base64: result.base64,
         prompt: prompt.trim(),
-        model: model.trim() || "gpt-5.4",
+        model: result.model,
         size,
         mode,
         timestamp: Date.now(),
@@ -217,6 +211,10 @@ export default function ImageGenerator() {
 
   const editButtonDisabled =
     busy || (mode === "edit" && inputImages.length === 0);
+  const usingDefaultBaseUrl = !baseUrl.trim();
+  const usingDefaultModel = !model.trim();
+  const hasApiKey = !!apiKey.trim();
+  const usingProxy = !hasApiKey;
 
   return (
     <main className="wrap">
@@ -226,37 +224,69 @@ export default function ImageGenerator() {
       </p>
 
       <section className="panel">
-        <div className="grid-2">
-          <div>
-            <label htmlFor="f-base">Base URL</label>
-            <input
-              id="f-base"
-              type="text"
-              placeholder="https://api.openai.com/v1"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-            />
-          </div>
-          <div>
-            <label htmlFor="f-model">Model</label>
-            <input
-              id="f-model"
-              type="text"
-              placeholder="gpt-5.4"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-            />
-          </div>
-        </div>
+        <button
+          type="button"
+          className="config-toggle"
+          onClick={() => setShowAdvanced((prev) => !prev)}
+          aria-expanded={showAdvanced}
+          aria-controls="advanced-config"
+        >
+          <span>高级配置</span>
+          <span className="config-toggle-meta">
+            {usingProxy ? "Cloudflare Secret" : "前端直连"}
+          </span>
+          <span className="config-toggle-icon">
+            {showAdvanced ? "收起" : "展开"}
+          </span>
+        </button>
 
-        <label htmlFor="f-key">API Key</label>
-        <input
-          id="f-key"
-          type="password"
-          placeholder="sk-...（密钥仅在浏览器本地使用，不会上传）"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-        />
+        <p className="config-summary">
+          Base URL: {usingDefaultBaseUrl ? DEFAULT_BASE_URL : baseUrl.trim()}
+          {" · "}
+          Model: {usingDefaultModel ? DEFAULT_MODEL : model.trim()}
+          {" · "}
+          路径: {usingProxy ? "未填写 API Key，使用 Cloudflare Secret" : "已填写 API Key，强制前端直连"}
+        </p>
+
+        <p className="config-notice">
+          填写 API Key 时，请求会直接从当前浏览器发送到上游接口；只有留空时，才会改为调用 Cloudflare 代理并使用服务端 Secret。
+        </p>
+
+        {showAdvanced && (
+          <div id="advanced-config" className="advanced-config">
+            <div className="grid-2">
+              <div>
+                <label htmlFor="f-base">Base URL</label>
+                <input
+                  id="f-base"
+                  type="text"
+                  placeholder={DEFAULT_BASE_URL}
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="f-model">Model</label>
+                <input
+                  id="f-model"
+                  type="text"
+                  placeholder={DEFAULT_MODEL}
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <label htmlFor="f-key">API Key</label>
+            <input
+              id="f-key"
+              type="password"
+              placeholder="填写后强制前端直连；留空才调用 Cloudflare /api/generate"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+          </div>
+        )}
 
         <label>模式</label>
         <div className="mode-tabs" role="tablist">

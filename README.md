@@ -43,6 +43,13 @@ pnpm install      # 或 npm i / yarn
 pnpm dev          # http://localhost:3000
 ```
 
+如果你希望本地联调 Cloudflare Pages Functions，而不是前端直连上游接口：
+
+```bash
+pnpm build
+npx wrangler pages dev out
+```
+
 ## 构建静态产物
 
 ```bash
@@ -73,6 +80,16 @@ pnpm deploy
    - **Build output directory**: `out`
    - **Node version** (环境变量): `NODE_VERSION = 20`
 3. 点击部署，后续 `git push` 自动构建上线。
+
+## Cloudflare Secret 配置
+
+如果你不想在浏览器里填写 `API Key`，可以把密钥配置到 Cloudflare Pages / Functions：
+
+- Secret 名称：`OPENAI_API_KEY`
+- 可选变量：`OPENAI_BASE_URL`
+- 可选变量：`OPENAI_MODEL`
+
+前端高级配置里的 `API Key` 留空时，会请求 `/api/generate`，由 Cloudflare Functions 从上述 Secret / Variables 读取配置并转发到上游接口。
 
 ## 关于路由模式
 
