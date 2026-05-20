@@ -43,7 +43,7 @@ export default function ImageGenerator() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [configMode, setConfigMode] = useState<"builtin" | "custom">("builtin");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 初始加载 IndexedDB
@@ -115,9 +115,9 @@ export default function ImageGenerator() {
     setBusy(true);
     try {
       const result = await generateImage({
-        baseUrl,
-        apiKey,
-        model,
+        baseUrl: configMode === "custom" ? baseUrl : "",
+        apiKey: configMode === "custom" ? apiKey : "",
+        model: configMode === "custom" ? model : "",
         prompt: prompt.trim(),
         size,
         mode,
@@ -150,7 +150,7 @@ export default function ImageGenerator() {
     } finally {
       setBusy(false);
     }
-  }, [apiKey, baseUrl, model, prompt, size, mode, inputImages]);
+  }, [apiKey, baseUrl, configMode, model, prompt, size, mode, inputImages]);
 
   const handleDelete = useCallback((idx: number) => {
     setHistory((h) => {
@@ -208,12 +208,17 @@ export default function ImageGenerator() {
     if (activeIdx >= 0) setLightboxIdx(activeIdx);
   }, [activeIdx]);
 
+  const customConfigInvalid =
+    configMode === "custom" &&
+    (!baseUrl.trim() || !model.trim() || !apiKey.trim());
   const editButtonDisabled =
-    busy || (mode === "edit" && inputImages.length === 0);
+    busy ||
+    (mode === "edit" && inputImages.length === 0) ||
+    customConfigInvalid;
   const usingDefaultBaseUrl = !baseUrl.trim();
   const usingDefaultModel = !model.trim();
   const hasApiKey = !!apiKey.trim();
-  const usingProxy = !hasApiKey;
+  const usingProxy = configMode === "builtin";
 
   return (
     <main className="wrap">
@@ -223,35 +228,32 @@ export default function ImageGenerator() {
       </p>
 
       <section className="panel">
-        <button
-          type="button"
+        <label htmlFor="config-mode">配置方式</label>
+        <select
+          id="config-mode"
           className="config-toggle"
-          onClick={() => setShowAdvanced((prev) => !prev)}
-          aria-expanded={showAdvanced}
-          aria-controls="advanced-config"
+          value={configMode}
+          onChange={(e) =>
+            setConfigMode(e.target.value as "builtin" | "custom")
+          }
         >
-          <span>高级配置</span>
-          <span className="config-toggle-meta">
-            {usingProxy ? "免配置模式" : "自定义直连"}
-          </span>
-          <span className="config-toggle-icon">
-            {showAdvanced ? "收起" : "展开"}
-          </span>
-        </button>
+          <option value="builtin">内置配置</option>
+          <option value="custom">自定义配置</option>
+        </select>
 
         <p className="config-summary">
           Base URL: {usingDefaultBaseUrl ? "未填写（自动）" : baseUrl.trim()}
           {" · "}
           Model: {usingDefaultModel ? "未填写（自动）" : model.trim()}
           {" · "}
-          连接方式: {usingProxy ? "未填写 API Key，使用内置安全通道" : "已填写 API Key，使用浏览器直连"}
+          连接方式: {usingProxy ? "内置配置" : "自定义配置"}
         </p>
 
         <p className="config-notice">
-          填写 API Key：由当前浏览器直接发起请求。留空：使用内置安全通道完成请求，无需手动配置。
+          选择“内置配置”可直接使用；选择“自定义配置”时，Base URL、Model、API Key 三项都必须填写。
         </p>
 
-        {showAdvanced && (
+        {configMode === "custom" && (
           <div id="advanced-config" className="advanced-config">
             <div className="grid-2">
               <div>
@@ -280,11 +282,14 @@ export default function ImageGenerator() {
             <input
               id="f-key"
               type="password"
-              placeholder="填写后使用浏览器直连；留空使用内置安全通道"
+              placeholder="请输入 API Key（必填）"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
           </div>
+        )}
+        {customConfigInvalid && (
+          <p className="config-notice">请完整填写 Base URL、Model 和 API Key。</p>
         )}
 
         <label>模式</label>
