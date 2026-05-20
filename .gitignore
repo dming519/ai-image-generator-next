@@ -6,3 +6,4 @@ out
 *.log
 .wrangler
 .vercel
+.idea

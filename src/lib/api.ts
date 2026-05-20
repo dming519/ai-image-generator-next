@@ -67,8 +67,6 @@ export async function generateImage(
   }
 
   const requestBody = {
-    baseUrl,
-    model,
     prompt: opts.prompt,
     size: opts.size,
     mode: opts.mode,

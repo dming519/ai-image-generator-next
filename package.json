@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "preview": "wrangler pages dev out",
-    "deploy": "next build && wrangler pages deploy out"
+    "preview": "wrangler pages dev out --project-name ai-image-generator-next",
+    "deploy": "next build && wrangler pages deploy out --project-name ai-image-generator-next"
   },
   "dependencies": {
     "next": "^15.0.0",

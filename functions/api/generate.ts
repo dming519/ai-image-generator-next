@@ -1,14 +1,10 @@
 import {
-  DEFAULT_BASE_URL,
-  DEFAULT_MODEL,
   resolveBaseUrl,
   resolveModel,
 } from "../../src/lib/config";
 import type { ImageMode, ImageSize } from "../../src/lib/types";
 
 interface GenerateRequestBody {
-  baseUrl?: string;
-  model?: string;
   prompt?: string;
   size?: ImageSize;
   mode?: ImageMode;
@@ -74,8 +70,8 @@ export async function onRequestPost(context: FunctionContext) {
   const mode = body.mode ?? "generate";
   const prompt = body.prompt?.trim() ?? "";
   const size = body.size ?? "1024x1536";
-  const baseUrl = resolveBaseUrl(body.baseUrl || context.env.OPENAI_BASE_URL);
-  const model = resolveModel(body.model || context.env.OPENAI_MODEL);
+  const baseUrl = resolveBaseUrl(context.env.OPENAI_BASE_URL);
+  const model = resolveModel(context.env.OPENAI_MODEL);
 
   if (!prompt && mode === "generate") {
     return json({ error: "请输入提示词" }, { status: 400 });
