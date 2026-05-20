@@ -228,18 +228,27 @@ export default function ImageGenerator() {
       </p>
 
       <section className="panel">
-        <label htmlFor="config-mode">配置方式</label>
-        <select
-          id="config-mode"
-          className="config-toggle"
-          value={configMode}
-          onChange={(e) =>
-            setConfigMode(e.target.value as "builtin" | "custom")
-          }
-        >
-          <option value="builtin">内置配置</option>
-          <option value="custom">自定义配置</option>
-        </select>
+        <label>配置方式</label>
+        <div className="mode-tabs" role="tablist" aria-label="配置方式">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={configMode === "builtin"}
+            className={`mode-tab${configMode === "builtin" ? " is-active" : ""}`}
+            onClick={() => setConfigMode("builtin")}
+          >
+            内置配置
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={configMode === "custom"}
+            className={`mode-tab${configMode === "custom" ? " is-active" : ""}`}
+            onClick={() => setConfigMode("custom")}
+          >
+            自定义配置
+          </button>
+        </div>
 
         {configMode === "custom" && (
           <div id="advanced-config" className="advanced-config">
