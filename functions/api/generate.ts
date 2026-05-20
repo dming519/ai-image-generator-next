@@ -11,23 +11,9 @@ interface GenerateRequestBody {
   inputImages?: string[];
 }
 
-interface ResponseOutput {
-  type: string;
-  result?: string;
-}
-
-interface ResponsesPayload {
-  output?: ResponseOutput[];
+interface ImagesPayload {
+  data?: Array<{ b64_json?: string }>;
   error?: { message?: string };
-}
-
-type InputContent =
-  | { type: "input_text"; text: string }
-  | { type: "input_image"; image_url: string };
-
-interface InputMessage {
-  role: "user";
-  content: InputContent[];
 }
 
 interface FunctionContext {
@@ -45,6 +31,11 @@ function resolveImageEndpoint(baseUrl: string, mode: ImageMode) {
     normalized +
     (mode === "edit" ? "/images/edits" : "/images/generations")
   );
+}
+
+function dataUrlToBase64(dataUrl: string) {
+  const idx = dataUrl.indexOf(",");
+  return idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl;
 }
 
 function json(data: unknown, init?: ResponseInit) {
@@ -89,26 +80,6 @@ export async function onRequestPost(context: FunctionContext) {
     return json({ error: "编辑模式必须上传至少一张源图片" }, { status: 400 });
   }
 
-  let input: string | InputMessage[];
-
-  if (images.length === 0) {
-    input = prompt;
-  } else {
-    const promptText =
-      mode === "edit"
-        ? prompt || "请根据上述源图片进行编辑，保留主体的同时根据后续要求作出调整"
-        : prompt;
-
-    const content: InputContent[] = [{ type: "input_text", text: promptText }];
-    for (const image of images) {
-      content.push({ type: "input_image", image_url: image });
-    }
-    input = [{ role: "user", content }];
-  }
-
-  const tool: { type: string; size?: string } = { type: "image_generation" };
-  if (size !== "auto") tool.size = size;
-
   const upstream = await fetch(resolveImageEndpoint(baseUrl, mode), {
     method: "POST",
     headers: {
@@ -117,8 +88,13 @@ export async function onRequestPost(context: FunctionContext) {
     },
     body: JSON.stringify({
       model,
-      input,
-      tools: [tool],
+      prompt:
+        mode === "edit"
+          ? prompt || "请根据源图片进行编辑，保留主体并按要求调整"
+          : prompt,
+      ...(size !== "auto" ? { size } : {}),
+      response_format: "b64_json",
+      ...(mode === "edit" ? { image: dataUrlToBase64(images[0]) } : {}),
     }),
   });
 
@@ -126,7 +102,7 @@ export async function onRequestPost(context: FunctionContext) {
   if (!upstream.ok) {
     let detail = text.slice(0, 300);
     try {
-      const payload = JSON.parse(text) as ResponsesPayload;
+      const payload = JSON.parse(text) as ImagesPayload;
       if (payload.error?.message) detail = payload.error.message;
     } catch {
       // keep raw text
@@ -134,16 +110,14 @@ export async function onRequestPost(context: FunctionContext) {
     return json({ error: `HTTP ${upstream.status}: ${detail}` }, { status: 502 });
   }
 
-  let payload: ResponsesPayload;
+  let payload: ImagesPayload;
   try {
-    payload = JSON.parse(text) as ResponsesPayload;
+    payload = JSON.parse(text) as ImagesPayload;
   } catch {
     return json({ error: "上游返回了无法解析的 JSON" }, { status: 502 });
   }
 
-  const result = (payload.output ?? []).find(
-    (item) => item.type === "image_generation_call" && item.result,
-  )?.result;
+  const result = payload.data?.[0]?.b64_json;
 
   if (!result) {
     return json(

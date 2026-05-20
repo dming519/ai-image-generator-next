@@ -220,7 +220,7 @@ export default function ImageGenerator() {
     <main className="wrap">
       <h1>🎨 AI 图片生成器</h1>
       <p className="tagline">
-        基于 OpenAI Responses API，在浏览器中直接生成 / 编辑图片
+        轻松生成或编辑图片，支持参考图与历史记录
       </p>
 
       <section className="panel">
@@ -233,7 +233,7 @@ export default function ImageGenerator() {
         >
           <span>高级配置</span>
           <span className="config-toggle-meta">
-            {usingProxy ? "Cloudflare Secret" : "前端直连"}
+            {usingProxy ? "免配置模式" : "自定义直连"}
           </span>
           <span className="config-toggle-icon">
             {showAdvanced ? "收起" : "展开"}
@@ -245,11 +245,11 @@ export default function ImageGenerator() {
           {" · "}
           Model: {usingDefaultModel ? DEFAULT_MODEL : model.trim()}
           {" · "}
-          路径: {usingProxy ? "未填写 API Key，使用 Cloudflare Secret" : "已填写 API Key，强制前端直连"}
+          连接方式: {usingProxy ? "未填写 API Key，使用内置安全通道" : "已填写 API Key，使用浏览器直连"}
         </p>
 
         <p className="config-notice">
-          填写 API Key 时，请求会直接从当前浏览器发送到上游接口；只有留空时，才会改为调用 Cloudflare 代理并使用服务端 Secret。
+          填写 API Key：由当前浏览器直接发起请求。留空：使用内置安全通道完成请求，无需手动配置。
         </p>
 
         {showAdvanced && (
@@ -281,7 +281,7 @@ export default function ImageGenerator() {
             <input
               id="f-key"
               type="password"
-              placeholder="填写后强制前端直连；留空才调用 Cloudflare /api/generate"
+              placeholder="填写后使用浏览器直连；留空使用内置安全通道"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
@@ -414,7 +414,7 @@ export default function ImageGenerator() {
       </section>
 
       <footer>
-        纯前端实现 · API 调用由浏览器直连，密钥不会经过第三方 · 历史图片存储在浏览器 IndexedDB 中
+        支持直连或免配置两种方式 · 历史记录仅保存在当前浏览器 · 可随时下载与复用提示词
       </footer>
 
       <Lightbox
