@@ -16,6 +16,7 @@ const DEFAULT_PROMPT = `为我生成图中角色的绘制 Q 版的，LINE 风格
 生成的图片需为 2K 分辨率 16:9`;
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 单张图片 8MB 上限
+type WakeLockSentinelLike = { release: () => Promise<void> };
 
 function fileToDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -45,6 +46,7 @@ export default function ImageGenerator() {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [configMode, setConfigMode] = useState<"builtin" | "custom">("builtin");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
 
   // 初始加载 IndexedDB
   useEffect(() => {
@@ -114,6 +116,19 @@ export default function ImageGenerator() {
 
     setBusy(true);
     try {
+      try {
+        const maybeWakeLock = (
+          navigator as Navigator & {
+            wakeLock?: { request: (type: "screen") => Promise<WakeLockSentinelLike> };
+          }
+        ).wakeLock;
+        if (maybeWakeLock) {
+          wakeLockRef.current = await maybeWakeLock.request("screen");
+        }
+      } catch {
+        // 部分移动端不支持或不允许 Wake Lock，忽略即可
+      }
+
       const result = await generateImage({
         baseUrl: configMode === "custom" ? baseUrl : "",
         apiKey: configMode === "custom" ? apiKey : "",
@@ -148,6 +163,10 @@ export default function ImageGenerator() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => undefined);
+        wakeLockRef.current = null;
+      }
       setBusy(false);
     }
   }, [apiKey, baseUrl, configMode, model, prompt, size, mode, inputImages]);

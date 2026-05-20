@@ -16,6 +16,26 @@ interface ProxyPayload {
   error?: string;
 }
 
+interface AsyncTaskCreatePayload {
+  taskId?: string;
+  status?: string;
+  error?: string;
+}
+
+interface AsyncTaskStatusPayload {
+  status?: "pending" | "running" | "succeeded" | "failed";
+  base64?: string;
+  model?: string;
+  error?: string;
+}
+
+function hasTaskId(
+  payload: ProxyPayload | AsyncTaskCreatePayload,
+): payload is AsyncTaskCreatePayload & { taskId: string } {
+  return typeof (payload as AsyncTaskCreatePayload).taskId === "string";
+}
+const RETRYABLE_FETCH_ERRORS = ["Failed to fetch", "NetworkError"];
+
 function resolveImageEndpoint(baseUrl: string, mode: GenerateOptions["mode"]) {
   const normalized = baseUrl.replace(/\/+$/, "");
   return (
@@ -56,9 +76,10 @@ export async function generateImage(
     inputImages: images,
   };
 
-  const resp = await fetch(
-    apiKey ? resolveImageEndpoint(baseUrl, opts.mode) : DEFAULT_PROXY_PATH,
-    {
+  const fetchUrl = apiKey
+    ? resolveImageEndpoint(baseUrl, opts.mode)
+    : DEFAULT_PROXY_PATH;
+  const fetchInit: RequestInit = {
     method: "POST",
     headers: apiKey
       ? {
@@ -85,8 +106,22 @@ export async function generateImage(
           }
         : requestBody,
     ),
-  },
-  );
+  };
+  let resp: Response;
+  try {
+    resp = await fetch(fetchUrl, fetchInit);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!RETRYABLE_FETCH_ERRORS.some((k) => msg.includes(k))) {
+      throw err;
+    }
+    await new Promise((r) => setTimeout(r, 1200));
+    try {
+      resp = await fetch(fetchUrl, fetchInit);
+    } catch {
+      throw new Error("网络连接中断，请保持页面常亮后重试");
+    }
+  }
 
   if (!resp.ok) {
     const text = await resp.text();
@@ -108,14 +143,40 @@ export async function generateImage(
   }
 
   if (!apiKey) {
-    const data = (await resp.json()) as ProxyPayload;
-    if (!data.base64) {
-      throw new Error("代理接口返回成功但缺少图片数据");
+    const created = (await resp.json()) as AsyncTaskCreatePayload | ProxyPayload;
+    if ("base64" in created && created.base64) {
+      return {
+        base64: created.base64,
+        model: created.model || "unknown",
+      };
     }
-    return {
-      base64: data.base64,
-      model: data.model || "unknown",
-    };
+    if (!hasTaskId(created)) {
+      throw new Error(created.error || "创建任务失败");
+    }
+
+    const deadline = Date.now() + 8 * 60 * 1000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 2000));
+      const statusResp = await fetch(
+        `${DEFAULT_PROXY_PATH}/status?taskId=${encodeURIComponent(created.taskId)}`,
+        { method: "GET" },
+      );
+      if (!statusResp.ok) {
+        const t = await statusResp.text();
+        throw new Error(`查询任务失败: HTTP ${statusResp.status}: ${t.slice(0, 160)}`);
+      }
+      const statusData = (await statusResp.json()) as AsyncTaskStatusPayload;
+      if (statusData.status === "succeeded" && statusData.base64) {
+        return {
+          base64: statusData.base64,
+          model: statusData.model || "unknown",
+        };
+      }
+      if (statusData.status === "failed") {
+        throw new Error(statusData.error || "任务执行失败");
+      }
+    }
+    throw new Error("任务超时，请重试");
   }
 
   const data = (await resp.json()) as ImagesPayload;

@@ -1,0 +1,6 @@
+name = "ai-image-generator-next"
+pages_build_output_dir = "out"
+
+[[kv_namespaces]]
+binding = "TASKS_KV"
+id = "dd221c4f760843efbd55a8605050539f"
