@@ -241,18 +241,6 @@ export default function ImageGenerator() {
           <option value="custom">自定义配置</option>
         </select>
 
-        <p className="config-summary">
-          Base URL: {usingDefaultBaseUrl ? "未填写（自动）" : baseUrl.trim()}
-          {" · "}
-          Model: {usingDefaultModel ? "未填写（自动）" : model.trim()}
-          {" · "}
-          连接方式: {usingProxy ? "内置配置" : "自定义配置"}
-        </p>
-
-        <p className="config-notice">
-          选择“内置配置”可直接使用；选择“自定义配置”时，Base URL、Model、API Key 三项都必须填写。
-        </p>
-
         {configMode === "custom" && (
           <div id="advanced-config" className="advanced-config">
             <div className="grid-2">
