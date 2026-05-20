@@ -39,6 +39,14 @@ interface FunctionContext {
   };
 }
 
+function resolveImageEndpoint(baseUrl: string, mode: ImageMode) {
+  const normalized = baseUrl.replace(/\/+$/, "");
+  return (
+    normalized +
+    (mode === "edit" ? "/images/edits" : "/images/generations")
+  );
+}
+
 function json(data: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(data), {
     ...init,
@@ -101,7 +109,7 @@ export async function onRequestPost(context: FunctionContext) {
   const tool: { type: string; size?: string } = { type: "image_generation" };
   if (size !== "auto") tool.size = size;
 
-  const upstream = await fetch(baseUrl.replace(/\/+$/, "") + "/responses", {
+  const upstream = await fetch(resolveImageEndpoint(baseUrl, mode), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

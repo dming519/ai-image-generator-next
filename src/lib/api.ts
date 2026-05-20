@@ -21,6 +21,14 @@ interface ProxyPayload {
   error?: string;
 }
 
+function resolveImageEndpoint(baseUrl: string, mode: GenerateOptions["mode"]) {
+  const normalized = baseUrl.replace(/\/+$/, "");
+  return (
+    normalized +
+    (mode === "edit" ? "/images/edits" : "/images/generations")
+  );
+}
+
 type InputContent =
   | { type: "input_text"; text: string }
   | { type: "input_image"; image_url: string };
@@ -73,7 +81,9 @@ export async function generateImage(
     inputImages: images,
   };
 
-  const resp = await fetch(apiKey ? baseUrl.replace(/\/+$/, "") + "/responses" : DEFAULT_PROXY_PATH, {
+  const resp = await fetch(
+    apiKey ? resolveImageEndpoint(baseUrl, opts.mode) : DEFAULT_PROXY_PATH,
+    {
     method: "POST",
     headers: apiKey
       ? {
@@ -92,7 +102,8 @@ export async function generateImage(
           }
         : requestBody,
     ),
-  });
+  },
+  );
 
   if (!resp.ok) {
     const text = await resp.text();
