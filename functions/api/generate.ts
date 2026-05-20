@@ -72,6 +72,13 @@ export async function onRequestPost(context: FunctionContext) {
   const baseUrl = resolveBaseUrl(context.env.OPENAI_BASE_URL);
   const model = resolveModel(context.env.OPENAI_MODEL);
 
+  if (!baseUrl) {
+    return json({ error: "服务端未配置 OPENAI_BASE_URL" }, { status: 500 });
+  }
+  if (!model) {
+    return json({ error: "服务端未配置 OPENAI_MODEL" }, { status: 500 });
+  }
+
   if (!prompt && mode === "generate") {
     return json({ error: "请输入提示词" }, { status: 400 });
   }

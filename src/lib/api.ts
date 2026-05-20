@@ -36,6 +36,13 @@ export async function generateImage(
   const model = resolveModel(opts.model);
   const apiKey = opts.apiKey?.trim();
 
+  if (apiKey && !baseUrl) {
+    throw new Error("前端直连时，请先填写 Base URL");
+  }
+  if (apiKey && !model) {
+    throw new Error("前端直连时，请先填写 Model");
+  }
+
   const images = (opts.inputImages ?? []).filter(Boolean);
 
   if (opts.mode === "edit" && images.length === 0) {
@@ -107,7 +114,7 @@ export async function generateImage(
     }
     return {
       base64: data.base64,
-      model: data.model || model,
+      model: data.model || "unknown",
     };
   }
 

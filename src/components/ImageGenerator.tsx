@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { generateImage } from "@/lib/api";
-import { DEFAULT_BASE_URL, DEFAULT_MODEL } from "@/lib/config";
 import { dbAdd, dbAll, dbClear, dbDel } from "@/lib/db";
 import type { HistoryItem, ImageMode, ImageSize } from "@/lib/types";
 import { usePersistentInput } from "@/hooks/usePersistentInput";
@@ -241,9 +240,9 @@ export default function ImageGenerator() {
         </button>
 
         <p className="config-summary">
-          Base URL: {usingDefaultBaseUrl ? DEFAULT_BASE_URL : baseUrl.trim()}
+          Base URL: {usingDefaultBaseUrl ? "未填写（自动）" : baseUrl.trim()}
           {" · "}
-          Model: {usingDefaultModel ? DEFAULT_MODEL : model.trim()}
+          Model: {usingDefaultModel ? "未填写（自动）" : model.trim()}
           {" · "}
           连接方式: {usingProxy ? "未填写 API Key，使用内置安全通道" : "已填写 API Key，使用浏览器直连"}
         </p>
@@ -260,7 +259,7 @@ export default function ImageGenerator() {
                 <input
                   id="f-base"
                   type="text"
-                  placeholder={DEFAULT_BASE_URL}
+                  placeholder="例如：https://api.openai.com/v1"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
                 />
@@ -270,7 +269,7 @@ export default function ImageGenerator() {
                 <input
                   id="f-model"
                   type="text"
-                  placeholder={DEFAULT_MODEL}
+                  placeholder="例如：gpt-image-2"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                 />
