@@ -68,6 +68,7 @@ export default function ImageGenerator() {
   const [error, setError] = useState<string | null>(null);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [configMode, setConfigMode] = useState<"builtin" | "custom">("builtin");
+  const [promptExpanded, setPromptExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
 
@@ -424,16 +425,26 @@ export default function ImageGenerator() {
         <label htmlFor="f-prompt">
           {mode === "edit" ? "编辑指令" : "提示词"}
         </label>
-        <textarea
-          id="f-prompt"
-          placeholder={
-            mode === "edit"
-              ? "描述你希望对源图片做的调整，例如：把背景换成樱花林，并加上柔和暖色光"
-              : "描述你想生成的图片..."
-          }
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-        />
+        <div className={`prompt-wrap${promptExpanded ? " is-expanded" : ""}`}>
+          <textarea
+            id="f-prompt"
+            placeholder={
+              mode === "edit"
+                ? "描述你希望对源图片做的调整，例如：把背景换成樱花林，并加上柔和暖色光"
+                : "描述你想生成的图片..."
+            }
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+          />
+          <button
+            type="button"
+            className="prompt-expand"
+            onClick={() => setPromptExpanded((v) => !v)}
+            aria-label={promptExpanded ? "缩小输入框" : "放大输入框"}
+          >
+            {promptExpanded ? "⤡" : "⤢"}
+          </button>
+        </div>
 
         <button
           className="btn-primary"

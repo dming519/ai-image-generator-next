@@ -234,6 +234,51 @@ textarea:focus {
 textarea {
   resize: vertical;
   min-height: 84px;
+  transition: min-height 0.2s;
+}
+
+.prompt-wrap {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.prompt-wrap textarea {
+  margin-bottom: 0;
+  padding-right: 44px;
+}
+
+.prompt-wrap.is-expanded textarea {
+  min-height: 240px;
+}
+
+.prompt-expand {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+.prompt-wrap:hover .prompt-expand,
+.prompt-wrap:focus-within .prompt-expand {
+  opacity: 1;
+}
+
+.prompt-expand:hover {
+  background: var(--hover-bg);
+  color: var(--accent-1);
 }
 
 .grid-2 {
