@@ -7,6 +7,10 @@
 
 当前项目已经不是单纯的静态前端页面，而是由前端页面、Pages Functions、KV、独立 Worker 和 Durable Object 共同组成。
 
+部署看这里：
+
+- [DEPLOY.md](F:\VSCodeProjects\ai-image-generator-next\DEPLOY.md)
+
 ## 功能说明
 
 - `生成图片`
