@@ -35,9 +35,22 @@ function resolveImageEndpoint(baseUrl: string, mode: ImageMode) {
   return normalized + (mode === "edit" ? "/images/edits" : "/images/generations");
 }
 
-function dataUrlToBase64(dataUrl: string) {
-  const idx = dataUrl.indexOf(",");
-  return idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl;
+function dataUrlToBlob(dataUrl: string) {
+  const match = dataUrl.match(/^data:([^;,]+)?(?:;base64)?,(.*)$/);
+  if (!match) {
+    throw new Error("图片数据格式无效，无法解析上传内容");
+  }
+
+  const mimeType = match[1] || "application/octet-stream";
+  const payload = match[2] || "";
+  const binary = atob(payload);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new Blob([bytes], { type: mimeType });
 }
 
 function json(data: unknown, init?: ResponseInit) {
@@ -106,23 +119,46 @@ export class ImageTasksDO {
     );
 
     try {
-      const upstream = await fetch(resolveImageEndpoint(baseUrl, mode), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          prompt:
-            mode === "edit"
-              ? prompt || "请根据源图片进行编辑，保留主体并按要求调整"
-              : prompt,
-          ...(size !== "auto" ? { size } : {}),
-          response_format: "b64_json",
-          ...(mode === "edit" ? { image: dataUrlToBase64(images[0]) } : {}),
-        }),
-      });
+      const upstream = await fetch(
+        resolveImageEndpoint(baseUrl, mode),
+        mode === "edit"
+          ? (() => {
+              const imageBlob = dataUrlToBlob(images[0]);
+              const extension = imageBlob.type.split("/")[1] || "png";
+              const formData = new FormData();
+              formData.append("model", model);
+              formData.append(
+                "prompt",
+                prompt || "请根据源图片进行编辑，保留主体并按要求调整",
+              );
+              if (size !== "auto") {
+                formData.append("size", size);
+              }
+              formData.append("response_format", "b64_json");
+              formData.append("image", imageBlob, `input-image.${extension}`);
+
+              return {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${apiKey}`,
+                },
+                body: formData,
+              } satisfies RequestInit;
+            })()
+          : {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model,
+                prompt,
+                ...(size !== "auto" ? { size } : {}),
+                response_format: "b64_json",
+              }),
+            },
+      );
 
       const text = await upstream.text();
       if (!upstream.ok) {

@@ -44,9 +44,22 @@ function resolveImageEndpoint(baseUrl: string, mode: GenerateOptions["mode"]) {
   );
 }
 
-function dataUrlToBase64(dataUrl: string) {
-  const idx = dataUrl.indexOf(",");
-  return idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl;
+function dataUrlToBlob(dataUrl: string) {
+  const match = dataUrl.match(/^data:([^;,]+)?(?:;base64)?,(.*)$/);
+  if (!match) {
+    throw new Error("图片数据格式无效，无法解析上传内容");
+  }
+
+  const mimeType = match[1] || "application/octet-stream";
+  const payload = match[2] || "";
+  const binary = atob(payload);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new Blob([bytes], { type: mimeType });
 }
 
 export async function generateImage(
@@ -79,34 +92,51 @@ export async function generateImage(
   const fetchUrl = apiKey
     ? resolveImageEndpoint(baseUrl, opts.mode)
     : DEFAULT_PROXY_PATH;
-  const fetchInit: RequestInit = {
-    method: "POST",
-    headers: apiKey
-      ? {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        }
+  const fetchInit: RequestInit = apiKey
+    ? opts.mode === "edit"
+      ? (() => {
+          const imageBlob = dataUrlToBlob(images[0]);
+          const extension = imageBlob.type.split("/")[1] || "png";
+          const formData = new FormData();
+          formData.append("model", model);
+          formData.append(
+            "prompt",
+            opts.prompt || "请根据源图片进行编辑，保留主体并按要求调整",
+          );
+          if (opts.size !== "auto") {
+            formData.append("size", opts.size);
+          }
+          formData.append("response_format", "b64_json");
+          formData.append("image", imageBlob, `input-image.${extension}`);
+
+          return {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: formData,
+          } satisfies RequestInit;
+        })()
       : {
-          "Content-Type": "application/json",
-        },
-    body: JSON.stringify(
-      apiKey
-        ? {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
             model,
-            prompt:
-              opts.mode === "edit"
-                ? opts.prompt ||
-                  "请根据源图片进行编辑，保留主体并按要求调整"
-                : opts.prompt,
+            prompt: opts.prompt,
             ...(opts.size !== "auto" ? { size: opts.size } : {}),
             response_format: "b64_json",
-            ...(opts.mode === "edit"
-              ? { image: dataUrlToBase64(images[0]) }
-              : {}),
-          }
-        : requestBody,
-    ),
-  };
+          }),
+        }
+    : {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      };
   let resp: Response;
   try {
     resp = await fetch(fetchUrl, fetchInit);
