@@ -568,10 +568,33 @@ textarea {
 }
 
 footer {
-  text-align: center;
   color: #444;
   font-size: 0.8em;
   margin-top: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.github-link {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--field-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  transition: transform 0.15s, background 0.2s, border-color 0.2s;
+}
+
+.github-link:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 @media (max-width: 520px) {
