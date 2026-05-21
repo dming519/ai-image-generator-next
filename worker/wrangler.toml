@@ -1,0 +1,16 @@
+name = "ai-image-worker"
+main = "src/index.ts"
+compatibility_date = "2026-05-21"
+
+[[kv_namespaces]]
+binding = "TASKS_KV"
+id = "dd221c4f760843efbd55a8605050539f"
+
+[durable_objects]
+bindings = [
+  { name = "IMAGE_TASKS", class_name = "ImageTasksDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ImageTasksDO"]
