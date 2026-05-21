@@ -7,9 +7,19 @@
 
 当前项目已经不是单纯的静态前端页面，而是由前端页面、Pages Functions、KV、独立 Worker 和 Durable Object 共同组成。
 
-部署看这里：
+## 先看这里
+
+使用说明：
+
+- [README.md](F:\VSCodeProjects\ai-image-generator-next\README.md)
+
+部署说明：
 
 - [DEPLOY.md](F:\VSCodeProjects\ai-image-generator-next\DEPLOY.md)
+
+部署检查清单：
+
+- [DEPLOY-CHECKLIST.md](F:\VSCodeProjects\ai-image-generator-next\DEPLOY-CHECKLIST.md)
 
 ## 功能说明
 
@@ -142,76 +152,10 @@ npm run preview
 
 ## 发布
 
-发布 Pages：
+详细部署步骤见：
 
-```bash
-npm run deploy
-```
-
-这个命令会：
-
-1. 执行 `next build`
-2. 将 `out` 目录发布到 Cloudflare Pages
-
-注意：
-
-- 这个命令只负责前端静态文件和 Pages Functions
-- 独立 Worker 需要在 `worker/` 目录单独发布
-
-## Cloudflare 配置
-
-## Pages 项目
-
-根目录 `wrangler.toml` 当前配置：
-
-```toml
-name = "ai-image-generator-next"
-pages_build_output_dir = "out"
-
-[[kv_namespaces]]
-binding = "TASKS_KV"
-id = "dd221c4f760843efbd55a8605050539f"
-```
-
-Pages 侧需要配置的 Secret：
-
-- `IMAGE_WORKER_URL`
-- `IMAGE_WORKER_TOKEN`
-
-## Worker 项目
-
-`worker/wrangler.toml` 当前配置：
-
-```toml
-name = "ai-image-worker"
-main = "src/index.ts"
-compatibility_date = "2026-05-21"
-
-[[kv_namespaces]]
-binding = "TASKS_KV"
-id = "dd221c4f760843efbd55a8605050539f"
-
-[durable_objects]
-bindings = [
-  { name = "IMAGE_TASKS", class_name = "ImageTasksDO" }
-]
-
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["ImageTasksDO"]
-```
-
-Worker 侧需要配置的 Secret：
-
-- `OPENAI_API_KEY`
-- `OPENAI_BASE_URL`
-- `OPENAI_MODEL`
-- `IMAGE_WORKER_TOKEN`
-
-Worker 侧使用的绑定：
-
-- `TASKS_KV`
-- `IMAGE_TASKS`
+- [DEPLOY.md](F:\VSCodeProjects\ai-image-generator-next\DEPLOY.md)
+- [DEPLOY-CHECKLIST.md](F:\VSCodeProjects\ai-image-generator-next\DEPLOY-CHECKLIST.md)
 
 ## 关键行为说明
 
