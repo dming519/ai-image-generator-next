@@ -27,6 +27,27 @@ function fileToDataURL(file: File): Promise<string> {
   });
 }
 
+function useTheme() {
+  const [dark, setDark] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("imggen_theme") === "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  }, [dark]);
+
+  const toggle = useCallback(() => {
+    setDark((prev) => {
+      const next = !prev;
+      localStorage.setItem("imggen_theme", next ? "dark" : "light");
+      return next;
+    });
+  }, []);
+
+  return { dark, toggle };
+}
+
 export default function ImageGenerator() {
   const [baseUrl, setBaseUrl] = usePersistentInput("imggen_f-base", "");
   const [model, setModel] = usePersistentInput("imggen_f-model", "");
@@ -35,6 +56,8 @@ export default function ImageGenerator() {
     "imggen_f-prompt",
     DEFAULT_PROMPT,
   );
+
+  const { dark, toggle: toggleTheme } = useTheme();
 
   const [mode, setMode] = useState<ImageMode>("generate");
   const [size, setSize] = useState<ImageSize>("1024x1536");
@@ -241,6 +264,16 @@ export default function ImageGenerator() {
 
   return (
     <main className="wrap">
+      <button
+        type="button"
+        className="theme-toggle"
+        onClick={toggleTheme}
+        aria-label={dark ? "切换到浅色模式" : "切换到深色模式"}
+        title={dark ? "切换到浅色模式" : "切换到深色模式"}
+      >
+        {dark ? "☀️" : "🌙"}
+      </button>
+
       <h1>🎨 AI 图片生成器</h1>
       <p className="tagline">
         轻松生成或编辑图片，支持参考图与历史记录
