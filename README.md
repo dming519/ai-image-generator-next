@@ -1,120 +1,250 @@
-# AI 图片生成器 (Next.js)
+# AI 图片生成器
 
-基于 OpenAI Responses API 的纯前端 AI 图片生成器，使用 Next.js 15 App Router + TypeScript 重构，可直接部署到 Cloudflare Pages。
+一个基于 `Next.js 15` 的图片生成 / 编辑工具，支持两种使用方式：
 
-## 技术栈
+- `内置配置`：前端调用 Cloudflare Pages Functions，后端再分发到独立 Worker 执行长耗时任务
+- `自定义配置`：浏览器直接请求用户填写的图片接口
 
-- **Next.js 15** (App Router) + **React 19** + **TypeScript**
-- 通过 `output: "export"` 静态导出，无服务端依赖
-- **IndexedDB** 持久化历史图片，**localStorage** 记忆配置
-- 浏览器直连 OpenAI 兼容 `/responses` 端点，密钥不经过任何第三方
+当前项目已经不是单纯的静态前端页面，而是由前端页面、Pages Functions、KV、独立 Worker 和 Durable Object 共同组成。
 
-## 项目结构
+## 功能说明
 
-```
+- `生成图片`
+  - 输入提示词生成图片
+  - 可选上传多张参考图
+- `编辑图片`
+  - 至少上传 1 张源图
+  - 输入编辑指令后生成新图
+- `配置方式`
+  - `内置配置`
+  - `自定义配置`
+- `历史记录`
+  - 结果保存在当前浏览器的 IndexedDB 中
+- `结果操作`
+  - 支持预览、放大、下载、复制提示词
+
+## 配置方式
+
+### 内置配置
+
+适合直接使用站点预设配置的场景。
+
+请求链路：
+
+1. 浏览器请求 `POST /api/generate`
+2. Cloudflare Pages Function 创建任务并写入 KV
+3. Pages Function 调用独立 Worker 的 `/task`
+4. Worker 通过 Durable Object 执行实际图片生成
+5. Worker 把任务状态和结果写回 KV
+6. 浏览器每 `2` 秒轮询一次 `GET /api/generate/status?taskId=...`
+7. 拿到结果后在页面展示，并写入本地历史记录
+
+这套异步任务机制主要是为了解决移动端浏览器长时间等待时连接被系统中断的问题。
+
+### 自定义配置
+
+适合自行填写兼容接口的场景。
+
+必填项：
+
+- `Base URL`
+- `Model`
+- `API Key`
+
+请求规则：
+
+- 选择 `生成图片` 时，请求 `POST {baseUrl}/images/generations`
+- 选择 `编辑图片` 时，请求 `POST {baseUrl}/images/edits`
+
+在这个模式下，请求由浏览器直接发往你填写的上游地址。
+
+## 当前实现架构
+
+### 前端
+
+- `Next.js 15`
+- `React 19`
+- `TypeScript`
+- `App Router`
+- 静态导出 `output: "export"`
+
+### Cloudflare 部分
+
+- `Cloudflare Pages`
+- `Cloudflare Pages Functions`
+- `Cloudflare KV`
+- 独立 `Cloudflare Worker`
+- `Durable Object`
+
+### 浏览器本地存储
+
+- `localStorage`
+  - 保存用户填写的 `Base URL`、`Model`、`API Key`、提示词
+- `IndexedDB`
+  - 保存历史图片结果和相关信息
+
+## 目录结构
+
+```text
 ai-image-generator-next/
 ├── app/
-│   ├── layout.tsx          # 根布局
-│   ├── page.tsx            # 入口页
-│   └── globals.css         # 全局样式
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── functions/
+│   └── api/
+│       ├── generate.ts
+│       └── generate/
+│           └── status.ts
 ├── src/
 │   ├── components/
-│   │   ├── ImageGenerator.tsx  # 主容器组件
-│   │   ├── SizeSelector.tsx    # 尺寸选择器
-│   │   ├── Stage.tsx           # 当前结果展示
-│   │   ├── HistoryGrid.tsx     # 历史网格
-│   │   └── Lightbox.tsx        # 大图预览
 │   ├── hooks/
-│   │   └── usePersistentInput.ts  # localStorage 双向绑定
 │   └── lib/
-│       ├── types.ts        # 类型定义
-│       ├── db.ts           # IndexedDB 封装
-│       └── api.ts          # OpenAI Responses API
+├── worker/
+│   ├── src/
+│   │   └── index.ts
+│   └── wrangler.toml
 ├── next.config.mjs
-├── tsconfig.json
+├── package.json
 ├── wrangler.toml
-└── package.json
+└── README.md
 ```
 
 ## 本地开发
 
-```bash
-pnpm install      # 或 npm i / yarn
-pnpm dev          # http://localhost:3000
-```
-
-如果你希望本地联调 Cloudflare Pages Functions，而不是前端直连上游接口：
+安装依赖：
 
 ```bash
-pnpm build
-npx wrangler pages dev out
+npm install
 ```
 
-## 构建静态产物
+启动开发环境：
 
 ```bash
-pnpm build        # 产物输出到 out/
+npm run dev
 ```
 
-## 部署到 Cloudflare Pages
-
-### 方式 A：CLI（Wrangler）
+构建静态站点：
 
 ```bash
-# 一次性登录
-npx wrangler login
-
-# 构建并部署
-pnpm deploy
-# 等价于：next build && wrangler pages deploy out
+npm run build
 ```
 
-### 方式 B：Git 集成（推荐生产）
-
-把仓库推到 GitHub/GitLab，在 Cloudflare Dashboard：
-
-1. **Workers & Pages → Create → Pages → Connect to Git**
-2. 选择仓库，配置：
-   - **Framework preset**: `Next.js (Static HTML Export)`
-   - **Build command**: `npm run build`
-   - **Build output directory**: `out`
-   - **Node version** (环境变量): `NODE_VERSION = 20`
-3. 点击部署，后续 `git push` 自动构建上线。
-
-## Cloudflare Secret 配置
-
-如果你不想在浏览器里填写 `API Key`，可以把密钥配置到 Cloudflare Pages / Functions：
-
-- Secret 名称：`OPENAI_API_KEY`
-- 可选变量：`OPENAI_BASE_URL`
-- 可选变量：`OPENAI_MODEL`
-
-前端高级配置里的 `API Key` 留空时，会请求 `/api/generate`，由 Cloudflare Functions 从上述 Secret / Variables 读取配置并转发到上游接口。
-
-## 关于路由模式
-
-当前使用 **Static Export**，因为应用本身是纯客户端：
-
-- 浏览器直接调用 OpenAI API
-- 数据存放在 IndexedDB / localStorage
-- 不需要 Next.js Server / Route Handlers
-
-如果未来需要服务端能力（例如把 API Key 放到服务端转发、加 KV 存储），改用 `@cloudflare/next-on-pages` 适配器即可：
+本地预览 Pages 输出：
 
 ```bash
-pnpm add -D @cloudflare/next-on-pages
-# 删除 next.config.mjs 中的 output: "export"
-# 给页面/路由声明 export const runtime = "edge"
-npx @cloudflare/next-on-pages
-npx wrangler pages deploy .vercel/output/static
+npm run preview
 ```
 
-## CORS 提示
+## 发布
 
-部分中转网关默认未开放浏览器跨域。若控制台出现 CORS 报错，可：
+发布 Pages：
 
-- 改用允许跨域的中转 / 官方 `https://api.openai.com/v1`
-- 或自建一个 Cloudflare Worker / Pages Functions 做反代（这种情况下推荐切到 `next-on-pages` 模式）
+```bash
+npm run deploy
+```
+
+这个命令会：
+
+1. 执行 `next build`
+2. 将 `out` 目录发布到 Cloudflare Pages
+
+注意：
+
+- 这个命令只负责前端静态文件和 Pages Functions
+- 独立 Worker 需要在 `worker/` 目录单独发布
+
+## Cloudflare 配置
+
+## Pages 项目
+
+根目录 `wrangler.toml` 当前配置：
+
+```toml
+name = "ai-image-generator-next"
+pages_build_output_dir = "out"
+
+[[kv_namespaces]]
+binding = "TASKS_KV"
+id = "dd221c4f760843efbd55a8605050539f"
+```
+
+Pages 侧需要配置的 Secret：
+
+- `IMAGE_WORKER_URL`
+- `IMAGE_WORKER_TOKEN`
+
+## Worker 项目
+
+`worker/wrangler.toml` 当前配置：
+
+```toml
+name = "ai-image-worker"
+main = "src/index.ts"
+compatibility_date = "2026-05-21"
+
+[[kv_namespaces]]
+binding = "TASKS_KV"
+id = "dd221c4f760843efbd55a8605050539f"
+
+[durable_objects]
+bindings = [
+  { name = "IMAGE_TASKS", class_name = "ImageTasksDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ImageTasksDO"]
+```
+
+Worker 侧需要配置的 Secret：
+
+- `OPENAI_API_KEY`
+- `OPENAI_BASE_URL`
+- `OPENAI_MODEL`
+- `IMAGE_WORKER_TOKEN`
+
+Worker 侧使用的绑定：
+
+- `TASKS_KV`
+- `IMAGE_TASKS`
+
+## 关键行为说明
+
+### 轮询策略
+
+- 轮询间隔：`2` 秒
+- 超时时间：`8` 分钟
+
+### 图片上传限制
+
+- 支持多图上传
+- 单张图片大小限制：`8MB`
+
+### 编辑模式
+
+- 必须上传至少 1 张图片
+- 当前实际提交给上游编辑接口的是第一张图片
+
+### 历史记录
+
+- 仅保存在当前浏览器
+- 清空浏览器站点数据后会一起消失
+
+## 已知限制
+
+- `自定义配置` 依赖上游兼容图片生成 / 编辑接口
+- `编辑图片` 当前只使用第一张图作为真正的编辑输入
+- 返回结果使用 `base64`，图片较大时响应体也会变大
+- Pages 和独立 Worker 是分离部署，发布时需要分别维护配置
+
+## 相关文件
+
+- 页面主逻辑：[src/components/ImageGenerator.tsx](F:\VSCodeProjects\ai-image-generator-next\src\components\ImageGenerator.tsx)
+- 前端请求封装：[src/lib/api.ts](F:\VSCodeProjects\ai-image-generator-next\src\lib\api.ts)
+- Pages 创建任务接口：[functions/api/generate.ts](F:\VSCodeProjects\ai-image-generator-next\functions\api\generate.ts)
+- Pages 查询状态接口：[functions/api/generate/status.ts](F:\VSCodeProjects\ai-image-generator-next\functions\api\generate\status.ts)
+- Worker 任务执行逻辑：[worker/src/index.ts](F:\VSCodeProjects\ai-image-generator-next\worker\src\index.ts)
 
 ## License
 
