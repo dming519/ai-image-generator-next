@@ -1,4 +1,5 @@
 import type { ImageMode, ImageSize } from "../../src/lib/types";
+import { requireSession } from "../_lib/auth";
 
 interface GenerateRequestBody {
   prompt?: string;
@@ -19,6 +20,7 @@ interface FunctionContext {
     };
     IMAGE_WORKER_URL?: string;
     IMAGE_WORKER_TOKEN?: string;
+    AUTH_SECRET?: string;
   };
   waitUntil?: (promise: Promise<unknown>) => void;
 }
@@ -34,6 +36,11 @@ function json(data: unknown, init?: ResponseInit) {
 }
 
 export async function onRequestPost(context: FunctionContext) {
+  const session = await requireSession(context.request, context.env);
+  if (!session) {
+    return json({ error: "内置模式需要先登录" }, { status: 401 });
+  }
+
   let body: GenerateRequestBody;
 
   try {

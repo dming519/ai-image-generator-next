@@ -1,9 +1,12 @@
+import { requireSession } from "../../_lib/auth";
+
 interface FunctionContext {
   request: Request;
   env: {
     TASKS_KV?: {
       get: (key: string) => Promise<string | null>;
     };
+    AUTH_SECRET?: string;
   };
 }
 
@@ -18,6 +21,11 @@ function json(data: unknown, init?: ResponseInit) {
 }
 
 export async function onRequestGet(context: FunctionContext) {
+  const session = await requireSession(context.request, context.env);
+  if (!session) {
+    return json({ error: "内置模式需要先登录" }, { status: 401 });
+  }
+
   const kv = context.env.TASKS_KV;
   if (!kv) {
     return json({ error: "服务端未配置 TASKS_KV" }, { status: 500 });

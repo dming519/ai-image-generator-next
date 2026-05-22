@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { generateImage } from "@/lib/api";
 import { dbAdd, dbAll, dbClear, dbDel } from "@/lib/db";
-import type { HistoryItem, ImageMode, ImageSize } from "@/lib/types";
+import type { AuthSession, HistoryItem, ImageMode, ImageSize } from "@/lib/types";
 import { usePersistentInput } from "@/hooks/usePersistentInput";
 import HistoryGrid from "./HistoryGrid";
 import Lightbox from "./Lightbox";
@@ -68,6 +68,8 @@ export default function ImageGenerator() {
   const [error, setError] = useState<string | null>(null);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [configMode, setConfigMode] = useState<"builtin" | "custom">("builtin");
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
@@ -83,6 +85,37 @@ export default function ImageGenerator() {
         if (items.length) setActiveIdx(items.length - 1);
       } catch (e) {
         console.warn("IndexedDB 读取失败:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const payload = (await response.json()) as AuthSession;
+        if (!cancelled) {
+          setSession(payload);
+        }
+      } catch {
+        if (!cancelled) {
+          setSession({ authenticated: false, user: null });
+        }
+      } finally {
+        if (!cancelled) {
+          setSessionLoading(false);
+        }
       }
     })();
     return () => {
@@ -133,6 +166,9 @@ export default function ImageGenerator() {
 
   const handleGenerate = useCallback(async () => {
     setError(null);
+    if (configMode === "builtin" && !session?.authenticated) {
+      return setError("内置配置仅对已登录用户开放，请先使用 GitHub 或 Google 登录。");
+    }
     if (!prompt.trim() && mode === "generate")
       return setError("请输入提示词");
     if (mode === "edit" && inputImages.length === 0)
@@ -193,7 +229,7 @@ export default function ImageGenerator() {
       }
       setBusy(false);
     }
-  }, [apiKey, baseUrl, configMode, model, prompt, size, mode, inputImages]);
+  }, [apiKey, baseUrl, configMode, model, prompt, size, mode, inputImages, session]);
 
   const handleDelete = useCallback((idx: number) => {
     setHistory((h) => {
@@ -254,10 +290,13 @@ export default function ImageGenerator() {
   const customConfigInvalid =
     configMode === "custom" &&
     (!baseUrl.trim() || !model.trim() || !apiKey.trim());
+  const builtinLocked = configMode === "builtin" && !session?.authenticated;
   const editButtonDisabled =
     busy ||
     (mode === "edit" && inputImages.length === 0) ||
-    customConfigInvalid;
+    customConfigInvalid ||
+    sessionLoading ||
+    builtinLocked;
   const usingDefaultBaseUrl = !baseUrl.trim();
   const usingDefaultModel = !model.trim();
   const hasApiKey = !!apiKey.trim();
@@ -290,7 +329,7 @@ export default function ImageGenerator() {
             className={`mode-tab${configMode === "builtin" ? " is-active" : ""}`}
             onClick={() => setConfigMode("builtin")}
           >
-            内置配置
+            内置配置{session?.authenticated ? "" : "（需登录）"}
           </button>
           <button
             type="button"
@@ -336,6 +375,69 @@ export default function ImageGenerator() {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
+          </div>
+        )}
+        {configMode === "builtin" && (
+          <div className="auth-card">
+            {sessionLoading ? (
+              <p className="config-notice">正在检查登录状态...</p>
+            ) : session?.authenticated && session.user ? (
+              <>
+                <div className="auth-summary">
+                  <div className="auth-user">
+                    {session.user.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name}
+                        className="auth-avatar"
+                      />
+                    ) : (
+                      <div className="auth-avatar auth-avatar-fallback">
+                        {session.user.name.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="auth-name">{session.user.name}</p>
+                      <p className="auth-meta">
+                        {session.user.provider === "github" ? "GitHub" : "Google"}
+                        {session.user.email ? ` · ${session.user.email}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    className="btn-ghost auth-link"
+                    href="/api/auth/logout?redirectTo=/"
+                  >
+                    退出登录
+                  </a>
+                </div>
+                <p className="config-notice">
+                  已登录，可以直接使用内置配置。生成和查询任务会自动携带登录会话。
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="config-notice">
+                  内置配置依赖站点服务端能力，当前只对已登录用户开放。使用 GitHub 或
+                  Google 登录后即可使用，登录有效期为 7 天。
+                </p>
+                <div className="auth-actions">
+                  <a
+                    className="btn-ghost auth-link"
+                    href="/api/auth/login/github?redirectTo=/"
+                  >
+                    使用 GitHub 登录
+                  </a>
+                  <a
+                    className="btn-ghost auth-link"
+                    href="/api/auth/login/google?redirectTo=/"
+                  >
+                    使用 Google 登录
+                  </a>
+                </div>
+              </>
+            )}
           </div>
         )}
         {customConfigInvalid && (

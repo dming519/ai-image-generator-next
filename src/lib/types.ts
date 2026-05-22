@@ -2,6 +2,21 @@ export type ImageSize = "1024x1024" | "1024x1536" | "1536x1024" | "auto";
 
 export type ImageMode = "generate" | "edit";
 
+export type AuthProvider = "github" | "google";
+
+export interface AuthUser {
+  provider: AuthProvider;
+  id: string;
+  name: string;
+  email: string | null;
+  image: string | null;
+}
+
+export interface AuthSession {
+  authenticated: boolean;
+  user: AuthUser | null;
+}
+
 export interface HistoryItem {
   id?: number;
   base64: string;
