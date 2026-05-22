@@ -70,9 +70,11 @@ export default function ImageGenerator() {
   const [configMode, setConfigMode] = useState<"builtin" | "custom">("builtin");
   const [session, setSession] = useState<AuthSession | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [authPopoverOpen, setAuthPopoverOpen] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
+  const authPopoverRef = useRef<HTMLDivElement | null>(null);
 
   // 初始加载 IndexedDB
   useEffect(() => {
@@ -91,6 +93,31 @@ export default function ImageGenerator() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!authPopoverOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (!authPopoverRef.current?.contains(target)) {
+        setAuthPopoverOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAuthPopoverOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [authPopoverOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -301,18 +328,107 @@ export default function ImageGenerator() {
   const usingDefaultModel = !model.trim();
   const hasApiKey = !!apiKey.trim();
   const usingProxy = configMode === "builtin";
+  const authLabel = session?.authenticated
+    ? `${session.user?.name || "已登录用户"} 账户菜单`
+    : "打开登录菜单";
 
   return (
     <main className="wrap">
-      <button
-        type="button"
-        className="theme-toggle"
-        onClick={toggleTheme}
-        aria-label={dark ? "切换到浅色模式" : "切换到深色模式"}
-        title={dark ? "切换到浅色模式" : "切换到深色模式"}
-      >
-        {dark ? "☀️" : "🌙"}
-      </button>
+      <div className="top-actions">
+        <div className="auth-popover-wrap" ref={authPopoverRef}>
+          <button
+            type="button"
+            className={`auth-toggle${authPopoverOpen ? " is-open" : ""}`}
+            onClick={() => setAuthPopoverOpen((value) => !value)}
+            aria-label={authLabel}
+            aria-expanded={authPopoverOpen}
+            aria-haspopup="dialog"
+            title={session?.authenticated ? session.user?.name || "账户" : "登录"}
+          >
+            {session?.authenticated && session.user?.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={session.user.image}
+                alt={session.user.name}
+                className="auth-toggle-avatar"
+              />
+            ) : (
+              <span className="auth-toggle-icon" aria-hidden="true">
+                {session?.authenticated ? "✓" : "◦"}
+              </span>
+            )}
+          </button>
+
+          {authPopoverOpen && (
+            <div className="auth-popover" role="dialog" aria-label="登录菜单">
+              {sessionLoading ? (
+                <p className="auth-popover-note">正在检查登录状态...</p>
+              ) : session?.authenticated && session.user ? (
+                <>
+                  <div className="auth-popover-user">
+                    {session.user.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name}
+                        className="auth-avatar"
+                      />
+                    ) : (
+                      <div className="auth-avatar auth-avatar-fallback">
+                        {session.user.name.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="auth-name">{session.user.name}</p>
+                      <p className="auth-meta">
+                        {session.user.provider === "github" ? "GitHub" : "Google"}
+                        {session.user.email ? ` · ${session.user.email}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="auth-popover-note">
+                    已登录，可直接使用内置配置。
+                  </p>
+                  <a
+                    className="btn-ghost auth-link auth-popover-link"
+                    href="/api/auth/logout?redirectTo=/"
+                  >
+                    退出登录
+                  </a>
+                </>
+              ) : (
+                <>
+                  <p className="auth-popover-note">
+                    登录后可使用内置配置，登录有效期为 7 天。
+                  </p>
+                  <a
+                    className="btn-ghost auth-link auth-popover-link"
+                    href="/api/auth/login/github?redirectTo=/"
+                  >
+                    使用 GitHub 登录
+                  </a>
+                  <a
+                    className="btn-ghost auth-link auth-popover-link"
+                    href="/api/auth/login/google?redirectTo=/"
+                  >
+                    使用 Google 登录
+                  </a>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={toggleTheme}
+          aria-label={dark ? "切换到浅色模式" : "切换到深色模式"}
+          title={dark ? "切换到浅色模式" : "切换到深色模式"}
+        >
+          {dark ? "☀️" : "🌙"}
+        </button>
+      </div>
 
       <h1>🎨 AI 图片生成器</h1>
       <p className="tagline">
@@ -377,68 +493,10 @@ export default function ImageGenerator() {
             />
           </div>
         )}
-        {configMode === "builtin" && (
-          <div className="auth-card">
-            {sessionLoading ? (
-              <p className="config-notice">正在检查登录状态...</p>
-            ) : session?.authenticated && session.user ? (
-              <>
-                <div className="auth-summary">
-                  <div className="auth-user">
-                    {session.user.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={session.user.image}
-                        alt={session.user.name}
-                        className="auth-avatar"
-                      />
-                    ) : (
-                      <div className="auth-avatar auth-avatar-fallback">
-                        {session.user.name.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <p className="auth-name">{session.user.name}</p>
-                      <p className="auth-meta">
-                        {session.user.provider === "github" ? "GitHub" : "Google"}
-                        {session.user.email ? ` · ${session.user.email}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <a
-                    className="btn-ghost auth-link"
-                    href="/api/auth/logout?redirectTo=/"
-                  >
-                    退出登录
-                  </a>
-                </div>
-                <p className="config-notice">
-                  已登录，可以直接使用内置配置。生成和查询任务会自动携带登录会话。
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="config-notice">
-                  内置配置依赖站点服务端能力，当前只对已登录用户开放。使用 GitHub 或
-                  Google 登录后即可使用，登录有效期为 7 天。
-                </p>
-                <div className="auth-actions">
-                  <a
-                    className="btn-ghost auth-link"
-                    href="/api/auth/login/github?redirectTo=/"
-                  >
-                    使用 GitHub 登录
-                  </a>
-                  <a
-                    className="btn-ghost auth-link"
-                    href="/api/auth/login/google?redirectTo=/"
-                  >
-                    使用 Google 登录
-                  </a>
-                </div>
-              </>
-            )}
-          </div>
+        {configMode === "builtin" && !session?.authenticated && (
+          <p className="config-notice">
+            内置配置需要先登录。请点击右上角账户图标，使用 GitHub 或 Google 登录。
+          </p>
         )}
         {customConfigInvalid && (
           <p className="config-notice">请完整填写 Base URL、Model 和 API Key。</p>
