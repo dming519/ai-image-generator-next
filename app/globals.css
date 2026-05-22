@@ -187,6 +187,23 @@ body {
   overflow: hidden;
 }
 
+.auth-toggle.is-guest {
+  background: var(--accent-grad);
+  border-color: transparent;
+  color: #fff;
+}
+
+.auth-toggle.is-guest:hover,
+.auth-toggle.is-guest.is-open {
+  background: var(--accent-grad);
+  color: #fff;
+  box-shadow: 0 8px 24px var(--btn-primary-hover-shadow);
+}
+
+.auth-toggle.is-authenticated {
+  padding: 0;
+}
+
 .auth-toggle:hover,
 .auth-toggle.is-open {
   transform: translateY(-1px);
@@ -202,8 +219,10 @@ body {
 }
 
 .auth-toggle-icon {
-  font-size: 1.2em;
-  line-height: 1;
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .auth-popover {

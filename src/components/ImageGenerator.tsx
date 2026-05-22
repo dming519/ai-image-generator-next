@@ -338,7 +338,7 @@ export default function ImageGenerator() {
         <div className="auth-popover-wrap" ref={authPopoverRef}>
           <button
             type="button"
-            className={`auth-toggle${authPopoverOpen ? " is-open" : ""}`}
+            className={`auth-toggle${authPopoverOpen ? " is-open" : ""}${session?.authenticated ? " is-authenticated" : " is-guest"}`}
             onClick={() => setAuthPopoverOpen((value) => !value)}
             aria-label={authLabel}
             aria-expanded={authPopoverOpen}
@@ -353,9 +353,27 @@ export default function ImageGenerator() {
                 className="auth-toggle-avatar"
               />
             ) : (
-              <span className="auth-toggle-icon" aria-hidden="true">
-                {session?.authenticated ? "✓" : "◦"}
-              </span>
+              <svg
+                className="auth-toggle-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                fill="none"
+              >
+                <path
+                  d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M4.5 20a7.5 7.5 0 0 1 15 0"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             )}
           </button>
 
