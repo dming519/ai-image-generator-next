@@ -448,7 +448,7 @@ export default function ImageGenerator() {
         </button>
       </div>
 
-      <h1>🎨 AI 图片生成器</h1>
+      <h1>AI图像生成器</h1>
       <p className="tagline">
         轻松生成或编辑图片，支持参考图与历史记录
       </p>
