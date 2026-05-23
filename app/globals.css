@@ -6,7 +6,6 @@
   box-sizing: border-box;
 }
 
-/* ===== 浅色主题（默认） ===== */
 :root {
   --bg-page: #fdf8f3;
   --bg-card: #ffffff;
@@ -25,7 +24,6 @@
   --shadow-md: 0 4px 16px rgba(249,115,22,.10), 0 1px 4px rgba(0,0,0,.05);
   --shadow-lg: 0 8px 32px rgba(249,115,22,.13), 0 2px 8px rgba(0,0,0,.05);
 
-  /* 主题依赖 token */
   --focus-ring: rgba(249,115,22,.12);
   --hover-bg: #fff7ed;
   --hover-overlay: rgba(249,115,22,.06);
@@ -61,61 +59,6 @@
   --radius-field: 10px;
 }
 
-/* ===== 深色主题 ===== */
-[data-theme="dark"] {
-  --bg-page: #0f0c29;
-  --bg-card: rgba(255, 255, 255, 0.05);
-  --accent-1: #667eea;
-  --accent-2: #764ba2;
-  --accent-3: #f093fb;
-  --accent-grad: linear-gradient(135deg, #667eea, #764ba2);
-  --text: #e6e6ec;
-  --text-sub: #8a8a94;
-  --muted: #8a8a94;
-  --danger: #ff6b6b;
-  --card-border: rgba(255, 255, 255, 0.1);
-  --field-bg: rgba(0, 0, 0, 0.3);
-  --field-border: rgba(255, 255, 255, 0.15);
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
-
-  --focus-ring: transparent;
-  --hover-bg: rgba(255, 255, 255, 0.08);
-  --hover-overlay: rgba(255, 255, 255, 0.05);
-  --active-bg: rgba(102, 126, 234, 0.2);
-  --tab-bar-bg: rgba(0, 0, 0, 0.25);
-  --tab-active-bg: linear-gradient(135deg, #667eea, #764ba2);
-  --tab-active-color: #fff;
-  --btn-ghost-bg: rgba(255, 255, 255, 0.08);
-  --btn-ghost-hover-bg: rgba(255, 255, 255, 0.15);
-  --btn-primary-hover-shadow: rgba(102, 126, 234, 0.4);
-  --spinner-track: rgba(255, 255, 255, 0.1);
-  --badge-bg: rgba(255, 255, 255, 0.05);
-  --badge-color: var(--muted);
-  --notice-bg: rgba(255, 255, 255, 0.04);
-  --notice-border: rgba(255, 255, 255, 0.08);
-  --tile-active-ring: rgba(240, 147, 251, 0.3);
-  --tile-foot-bg: rgba(0, 0, 0, 0.8);
-  --tile-no-bg: rgba(0, 0, 0, 0.6);
-  --tile-no-color: #aaa;
-  --github-link-bg: rgba(255, 255, 255, 0.05);
-  --thumb-del-bg: rgba(0, 0, 0, 0.65);
-  --thumb-del-color: #fff;
-  --alert-color: var(--danger);
-  --alert-bg: rgba(255, 107, 107, 0.1);
-  --alert-border: rgba(255, 107, 107, 0.2);
-  --lightbox-bg: rgba(0, 0, 0, 0.92);
-  --icon-large-opacity: 0.3;
-  --mode-tab-color: #bbb;
-  --mode-tab-hover-color: #fff;
-}
-
-/* 深色主题下 body 使用纯色渐变，去掉光晕 */
-[data-theme="dark"] body {
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-}
-
 html,
 body {
   min-height: 100%;
@@ -141,30 +84,6 @@ body {
   align-items: center;
   gap: 10px;
   z-index: 100;
-}
-
-/* ---- 主题切换按钮 ---- */
-.theme-toggle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1.5px solid var(--card-border);
-  background: var(--bg-card);
-  color: var(--text-sub);
-  cursor: pointer;
-  font-size: 1.2em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: border-color 0.2s, background 0.2s, transform 0.15s;
-  box-shadow: var(--shadow-sm);
-}
-
-.theme-toggle:hover {
-  transform: translateY(-1px);
-  border-color: var(--accent-1);
-  color: var(--accent-1);
-  background: var(--hover-bg);
 }
 
 .auth-popover-wrap {
