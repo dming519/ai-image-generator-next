@@ -292,7 +292,7 @@ h1 {
 
 .workbench {
   display: grid;
-  grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: start;
   gap: 22px;
 }
@@ -354,7 +354,8 @@ select {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--accent-1);
   box-shadow: 0 0 0 3px var(--focus-ring);
@@ -364,6 +365,14 @@ textarea:focus {
 input::placeholder,
 textarea::placeholder {
   color: var(--muted);
+}
+
+select {
+  cursor: pointer;
+}
+
+.config-select:hover {
+  border-color: var(--accent-1);
 }
 
 textarea {

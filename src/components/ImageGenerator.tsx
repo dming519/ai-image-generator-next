@@ -455,73 +455,7 @@ export default function ImageGenerator() {
       </header>
 
       <div className="workbench">
-      <section className="panel control-panel">
-        <label>配置方式</label>
-        <div className="mode-tabs" role="tablist" aria-label="配置方式">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={configMode === "builtin"}
-            className={`mode-tab${configMode === "builtin" ? " is-active" : ""}`}
-            onClick={() => setConfigMode("builtin")}
-          >
-            内置配置{session?.authenticated ? "" : "（需登录）"}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={configMode === "custom"}
-            className={`mode-tab${configMode === "custom" ? " is-active" : ""}`}
-            onClick={() => setConfigMode("custom")}
-          >
-            自定义配置
-          </button>
-        </div>
-
-        {configMode === "custom" && (
-          <div id="advanced-config" className="advanced-config">
-            <div className="grid-2">
-              <div>
-                <label htmlFor="f-base">Base URL</label>
-                <input
-                  id="f-base"
-                  type="text"
-                  placeholder="例如：https://api.openai.com/v1"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="f-model">Model</label>
-                <input
-                  id="f-model"
-                  type="text"
-                  placeholder="例如：gpt-image-2"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <label htmlFor="f-key">API Key</label>
-            <input
-              id="f-key"
-              type="password"
-              placeholder="请输入 API Key（必填）"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-          </div>
-        )}
-        {configMode === "builtin" && !session?.authenticated && (
-          <p className="config-notice">
-            内置配置需要先登录。请点击右上角账户图标，使用 GitHub 或 Google 登录。
-          </p>
-        )}
-        {customConfigInvalid && (
-          <p className="config-notice">请完整填写 Base URL、Model 和 API Key。</p>
-        )}
-
+        <section className="panel control-panel">
         <label>模式</label>
         <div className="mode-tabs" role="tablist">
           <button
@@ -618,6 +552,65 @@ export default function ImageGenerator() {
           />
         </div>
 
+        <label htmlFor="f-config-mode">配置方式</label>
+        <select
+          id="f-config-mode"
+          className="config-select"
+          value={configMode}
+          onChange={(e) =>
+            setConfigMode(e.target.value as "builtin" | "custom")
+          }
+        >
+          <option value="builtin">
+            内置配置{session?.authenticated ? "" : "（需登录）"}
+          </option>
+          <option value="custom">自定义配置</option>
+        </select>
+
+        {configMode === "custom" && (
+          <div id="advanced-config" className="advanced-config">
+            <div className="grid-2">
+              <div>
+                <label htmlFor="f-base">Base URL</label>
+                <input
+                  id="f-base"
+                  type="text"
+                  placeholder="例如：https://api.openai.com/v1"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="f-model">Model</label>
+                <input
+                  id="f-model"
+                  type="text"
+                  placeholder="例如：gpt-image-2"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <label htmlFor="f-key">API Key</label>
+            <input
+              id="f-key"
+              type="password"
+              placeholder="请输入 API Key（必填）"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+          </div>
+        )}
+        {configMode === "builtin" && !session?.authenticated && (
+          <p className="config-notice">
+            内置配置需要先登录。请点击右上角账户图标，使用 GitHub 或 Google 登录。
+          </p>
+        )}
+        {customConfigInvalid && (
+          <p className="config-notice">请完整填写 Base URL、Model 和 API Key。</p>
+        )}
+
         <button
           className="btn-primary"
           type="button"
@@ -626,7 +619,7 @@ export default function ImageGenerator() {
         >
           {mode === "edit" ? "🖌️ 开始编辑" : "✨ 生成图片"}
         </button>
-      </section>
+        </section>
 
         <div className="results-column">
           <section className="panel preview-panel">
