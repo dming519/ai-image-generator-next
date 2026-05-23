@@ -48,7 +48,6 @@ export default function ImageGenerator() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [authPopoverOpen, setAuthPopoverOpen] = useState(false);
-  const [promptExpanded, setPromptExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
   const authPopoverRef = useRef<HTMLDivElement | null>(null);
@@ -570,7 +569,7 @@ export default function ImageGenerator() {
         <label htmlFor="f-prompt">
           {mode === "edit" ? "编辑指令" : "提示词"}
         </label>
-        <div className={`prompt-wrap${promptExpanded ? " is-expanded" : ""}`}>
+        <div className="prompt-wrap">
           <textarea
             id="f-prompt"
             placeholder={
@@ -581,14 +580,6 @@ export default function ImageGenerator() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
-          <button
-            type="button"
-            className="prompt-expand"
-            onClick={() => setPromptExpanded((v) => !v)}
-            aria-label={promptExpanded ? "缩小输入框" : "放大输入框"}
-          >
-            {promptExpanded ? "⤡" : "⤢"}
-          </button>
         </div>
 
         <button
