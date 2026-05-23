@@ -447,12 +447,15 @@ export default function ImageGenerator() {
         </button>
       </div>
 
-      <h1>AI图像生成器</h1>
-      <p className="tagline">
-        轻松生成或编辑图片，支持参考图与历史记录
-      </p>
+      <header className="app-header">
+        <h1>AI图像生成器</h1>
+        <p className="tagline">
+          轻松生成或编辑图片，支持参考图与历史记录
+        </p>
+      </header>
 
-      <section className="panel">
+      <div className="workbench">
+      <section className="panel control-panel">
         <label>配置方式</label>
         <div className="mode-tabs" role="tablist" aria-label="配置方式">
           <button
@@ -625,26 +628,29 @@ export default function ImageGenerator() {
         </button>
       </section>
 
-      <section className="panel">
-        <Stage
-          item={activeIdx >= 0 ? history[activeIdx] ?? null : null}
-          busy={busy}
-          error={error}
-          onDownload={handleDownload}
-          onCopyPrompt={handleCopyPrompt}
-          onZoom={handleZoom}
-        />
-      </section>
+        <div className="results-column">
+          <section className="panel preview-panel">
+            <Stage
+              item={activeIdx >= 0 ? history[activeIdx] ?? null : null}
+              busy={busy}
+              error={error}
+              onDownload={handleDownload}
+              onCopyPrompt={handleCopyPrompt}
+              onZoom={handleZoom}
+            />
+          </section>
 
-      <section className="panel">
-        <HistoryGrid
-          history={history}
-          activeIdx={activeIdx}
-          onSelect={setActiveIdx}
-          onDelete={handleDelete}
-          onClearAll={handleClearAll}
-        />
-      </section>
+          <section className="panel history-panel">
+            <HistoryGrid
+              history={history}
+              activeIdx={activeIdx}
+              onSelect={setActiveIdx}
+              onDelete={handleDelete}
+              onClearAll={handleClearAll}
+            />
+          </section>
+        </div>
+      </div>
 
       <footer>
         支持直连或免配置两种方式 · 历史记录仅保存在当前浏览器 · 可随时下载与复用提示词
