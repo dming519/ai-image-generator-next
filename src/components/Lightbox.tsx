@@ -5,12 +5,16 @@ import type { HistoryItem } from "@/lib/types";
 
 interface LightboxProps {
   item: HistoryItem | null;
+  src?: string | null;
+  alt?: string;
   onClose: () => void;
 }
 
-export default function Lightbox({ item, onClose }: LightboxProps) {
+export default function Lightbox({ item, src, alt = "Preview", onClose }: LightboxProps) {
+  const imageSrc = src ?? (item ? "data:image/png;base64," + item.base64 : null);
+
   useEffect(() => {
-    if (!item) return;
+    if (!imageSrc) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
@@ -20,9 +24,9 @@ export default function Lightbox({ item, onClose }: LightboxProps) {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [item, onClose]);
+  }, [imageSrc, onClose]);
 
-  if (!item) return null;
+  if (!imageSrc) return null;
 
   return (
     <div
@@ -40,7 +44,7 @@ export default function Lightbox({ item, onClose }: LightboxProps) {
         ✕
       </button>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={"data:image/png;base64," + item.base64} alt="Preview" />
+      <img src={imageSrc} alt={alt} />
     </div>
   );
 }

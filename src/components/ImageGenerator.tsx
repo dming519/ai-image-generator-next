@@ -68,6 +68,7 @@ export default function ImageGenerator() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [inputLightboxIdx, setInputLightboxIdx] = useState<number | null>(null);
   const [configMode, setConfigMode] = useState<"builtin" | "custom">("builtin");
   const [session, setSession] = useState<AuthSession | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -508,8 +509,16 @@ export default function ImageGenerator() {
               <>
                 {inputImages.map((src, i) => (
                   <div className="prompt-thumb" key={i}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt={`输入图 ${i + 1}`} />
+                    <button
+                      type="button"
+                      className="prompt-thumb-preview"
+                      onClick={() => setInputLightboxIdx(i)}
+                      aria-label={`放大查看输入图 ${i + 1}`}
+                      title="放大查看"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={`输入图 ${i + 1}`} />
+                    </button>
                     <button
                       type="button"
                       className="prompt-thumb-del"
@@ -679,8 +688,21 @@ export default function ImageGenerator() {
       </footer>
 
       <Lightbox
-        item={lightboxIdx !== null ? history[lightboxIdx] ?? null : null}
-        onClose={() => setLightboxIdx(null)}
+        item={
+          lightboxIdx !== null && inputLightboxIdx === null
+            ? history[lightboxIdx] ?? null
+            : null
+        }
+        src={
+          inputLightboxIdx !== null
+            ? inputImages[inputLightboxIdx] ?? null
+            : null
+        }
+        alt={inputLightboxIdx !== null ? `输入图 ${inputLightboxIdx + 1}` : "Preview"}
+        onClose={() => {
+          setLightboxIdx(null);
+          setInputLightboxIdx(null);
+        }}
       />
     </main>
   );
