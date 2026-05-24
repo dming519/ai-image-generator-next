@@ -7,6 +7,7 @@ import type { AuthSession, HistoryItem, ImageMode, ImageSize } from "@/lib/types
 import { usePersistentInput } from "@/hooks/usePersistentInput";
 import HistoryGrid from "./HistoryGrid";
 import Lightbox from "./Lightbox";
+import ParamHoverSelect from "./ParamHoverSelect";
 import SizeSelector from "./SizeSelector";
 import Stage from "./Stage";
 
@@ -330,6 +331,13 @@ export default function ImageGenerator() {
   const authLabel = session?.authenticated
     ? `${session.user?.name || "已登录用户"} 账户菜单`
     : "打开登录菜单";
+  const configOptions = [
+    {
+      value: "builtin",
+      label: `内置配置${session?.authenticated ? "" : "（需登录）"}`,
+    },
+    { value: "custom", label: "自定义配置" },
+  ];
 
   return (
     <main className="wrap">
@@ -533,9 +541,6 @@ export default function ImageGenerator() {
           </div>
         )}
 
-        <label>图片尺寸</label>
-        <SizeSelector value={size} onChange={setSize} />
-
         <label htmlFor="f-prompt">
           {mode === "edit" ? "编辑指令" : "提示词"}
         </label>
@@ -552,63 +557,65 @@ export default function ImageGenerator() {
           />
         </div>
 
-        <label htmlFor="f-config-mode">配置方式</label>
-        <select
-          id="f-config-mode"
-          className="config-select"
-          value={configMode}
-          onChange={(e) =>
-            setConfigMode(e.target.value as "builtin" | "custom")
-          }
-        >
-          <option value="builtin">
-            内置配置{session?.authenticated ? "" : "（需登录）"}
-          </option>
-          <option value="custom">自定义配置</option>
-        </select>
+        <div className="param-controls" aria-label="生成参数">
+          <SizeSelector value={size} onChange={setSize} />
 
-        {configMode === "custom" && (
-          <div id="advanced-config" className="advanced-config">
-            <div className="grid-2">
-              <div>
-                <label htmlFor="f-base">Base URL</label>
-                <input
-                  id="f-base"
-                  type="text"
-                  placeholder="例如：https://api.openai.com/v1"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                />
+          <ParamHoverSelect
+            title="选择配置方式"
+            value={configMode}
+            options={configOptions}
+            onChange={(next) =>
+              setConfigMode(next as "builtin" | "custom")
+            }
+            className="config-picker"
+            keepOpenOnSelect
+          >
+            {configMode === "custom" && (
+              <div className="popover-config">
+                <div>
+                  <label htmlFor="f-base">Base URL</label>
+                  <input
+                    id="f-base"
+                    type="text"
+                    placeholder="https://api.openai.com/v1"
+                    value={baseUrl}
+                    onChange={(e) => setBaseUrl(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="f-model">Model</label>
+                  <input
+                    id="f-model"
+                    type="text"
+                    placeholder="gpt-image-2"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="f-key">API Key</label>
+                  <input
+                    id="f-key"
+                    type="password"
+                    placeholder="请输入 API Key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                  />
+                </div>
+                {customConfigInvalid && (
+                  <p className="popover-config-note">
+                    请完整填写 Base URL、Model 和 API Key。
+                  </p>
+                )}
               </div>
-              <div>
-                <label htmlFor="f-model">Model</label>
-                <input
-                  id="f-model"
-                  type="text"
-                  placeholder="例如：gpt-image-2"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                />
-              </div>
-            </div>
+            )}
+          </ParamHoverSelect>
+        </div>
 
-            <label htmlFor="f-key">API Key</label>
-            <input
-              id="f-key"
-              type="password"
-              placeholder="请输入 API Key（必填）"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-          </div>
-        )}
         {configMode === "builtin" && !session?.authenticated && (
           <p className="config-notice">
             内置配置需要先登录。请点击右上角账户图标，使用 GitHub 或 Google 登录。
           </p>
-        )}
-        {customConfigInvalid && (
-          <p className="config-notice">请完整填写 Base URL、Model 和 API Key。</p>
         )}
 
         <button

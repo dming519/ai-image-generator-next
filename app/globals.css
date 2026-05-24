@@ -371,10 +371,6 @@ select {
   cursor: pointer;
 }
 
-.config-select:hover {
-  border-color: var(--accent-1);
-}
-
 textarea {
   resize: none;
   min-height: 104px;
@@ -411,51 +407,6 @@ textarea {
     inset 0 1px 0 rgba(255,255,255,.75);
 }
 
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.config-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1.5px solid var(--field-border);
-  border-radius: var(--radius-field);
-  background: var(--field-bg);
-  color: var(--text);
-  padding: 14px 16px;
-  cursor: pointer;
-  font: inherit;
-  margin-bottom: 10px;
-  transition: border-color 0.2s, background 0.2s;
-}
-
-.config-toggle:hover {
-  border-color: var(--accent-1);
-  background: var(--hover-bg);
-}
-
-.config-toggle-meta {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 0.85em;
-}
-
-.config-toggle-icon {
-  color: var(--text-sub);
-  font-size: 0.82em;
-}
-
-.config-summary {
-  color: var(--muted);
-  font-size: 0.82em;
-  margin-bottom: 18px;
-  word-break: break-word;
-}
-
 .config-notice {
   color: var(--text-sub);
   font-size: 0.85em;
@@ -465,10 +416,6 @@ textarea {
   border: 1.5px solid var(--notice-border);
   border-radius: var(--radius-field);
   background: var(--notice-bg);
-}
-
-.advanced-config {
-  margin-bottom: 8px;
 }
 
 .auth-avatar {
@@ -506,11 +453,165 @@ textarea {
   justify-content: center;
 }
 
-.size-row {
+.param-controls {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 18px;
+}
+
+.param-controls .param-picker {
+  margin-bottom: 0;
+}
+
+.param-picker {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 18px;
+}
+
+.param-trigger {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-btn);
+  background: var(--btn-ghost-bg);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9em;
+  font-weight: 600;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.param-trigger:hover,
+.param-trigger:focus,
+.param-trigger.is-open {
+  outline: none;
+  border-color: var(--accent-1);
+  color: var(--accent-1);
+  background: var(--btn-ghost-hover-bg);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.param-popover {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  z-index: 60;
+  width: max-content;
+  min-width: 236px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-lg);
+}
+
+.param-popover::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  border-right: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
+  background: var(--bg-card);
+  transform: rotate(45deg);
+}
+
+.param-popover-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.config-picker .param-popover {
+  left: auto;
+  right: 0;
+  width: min(360px, calc(100vw - 32px));
+}
+
+.config-picker .param-popover::after {
+  left: auto;
+  right: 22px;
+}
+
+.config-picker .param-popover-options {
+  grid-template-columns: 1fr;
+}
+
+.param-popover-option {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--field-bg);
+  color: var(--text-sub);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.92em;
+  font-weight: 600;
+  text-align: left;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.param-popover-option:hover {
+  border-color: var(--accent-1);
+  color: var(--accent-1);
+  background: var(--btn-ghost-hover-bg);
+}
+
+.param-popover-option.is-active {
+  border-color: var(--accent-1);
+  color: var(--accent-1);
+  background: var(--active-bg);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.param-option-check {
+  color: var(--accent-1);
+  font-size: 0.82em;
+}
+
+.param-popover-body {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--card-border);
+}
+
+.popover-config {
+  display: grid;
+  gap: 10px;
+}
+
+.popover-config label {
+  margin-bottom: 6px;
+  font-size: 0.78em;
+}
+
+.popover-config input {
+  min-height: 40px;
+  padding: 9px 10px;
+  font-size: 0.88em;
+}
+
+.popover-config-note {
+  color: var(--error);
+  font-size: 0.8em;
+  line-height: 1.45;
 }
 
 .mode-tabs {
@@ -609,32 +710,6 @@ textarea {
 .thumb-del:hover {
   background: var(--danger);
   color: #fff;
-}
-
-.size-chip {
-  padding: 8px 16px;
-  border: 1.5px solid var(--field-border);
-  border-radius: 8px;
-  background: var(--field-bg);
-  color: var(--text-sub);
-  cursor: pointer;
-  font-size: 0.85em;
-  transition: all 0.2s;
-  user-select: none;
-  font-weight: 500;
-}
-
-.size-chip:hover {
-  border-color: var(--accent-1);
-  color: var(--accent-1);
-  background: var(--hover-bg);
-}
-
-.size-chip.is-active {
-  border-color: var(--accent-1);
-  background: var(--active-bg);
-  color: var(--accent-1);
-  font-weight: 600;
 }
 
 .btn-primary {
@@ -1057,10 +1132,8 @@ footer {
     inset 0 1px 0 rgba(237,234,222,.08);
 }
 
-[data-theme="dark"] .config-toggle,
 [data-theme="dark"] .config-notice,
 [data-theme="dark"] .thumb,
-[data-theme="dark"] .size-chip,
 [data-theme="dark"] .btn-ghost,
 [data-theme="dark"] .btn-danger,
 [data-theme="dark"] .github-link {
@@ -1077,7 +1150,6 @@ footer {
 
 [data-theme="dark"] .mode-tabs,
 [data-theme="dark"] .mode-tab,
-[data-theme="dark"] .size-chip,
 [data-theme="dark"] .btn-primary,
 [data-theme="dark"] .history-badge,
 [data-theme="dark"] .btn-danger,
@@ -1093,10 +1165,6 @@ footer {
 [data-theme="dark"] .stage img,
 [data-theme="dark"] .tile {
   border-radius: var(--radius-card);
-}
-
-[data-theme="dark"] .size-chip {
-  padding: 9px 16px;
 }
 
 [data-theme="dark"] .btn-primary {
@@ -1173,11 +1241,6 @@ footer {
     padding: 18px;
   }
 
-  .grid-2 {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-
   .mode-tabs {
     gap: 4px;
     padding: 3px;
@@ -1205,20 +1268,39 @@ footer {
     line-height: 1.5;
   }
 
-  .size-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .size-chip {
-    min-height: 42px;
-    padding: 8px 10px;
-  }
-
   .prompt-wrap textarea {
     min-height: 176px;
     padding: 14px;
+  }
+
+  .param-controls {
+    align-items: center;
+  }
+
+  .param-picker {
+    position: static;
+  }
+
+  .param-trigger {
+    min-height: 40px;
+    padding: 9px 12px;
+    font-size: 0.86em;
+  }
+
+  .param-popover,
+  .config-picker .param-popover {
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 10px);
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .param-popover::after,
+  .config-picker .param-popover::after {
+    left: 24px;
+    right: auto;
   }
 
   [data-theme="dark"] .prompt-wrap textarea {
