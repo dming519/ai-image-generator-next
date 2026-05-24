@@ -486,32 +486,61 @@ export default function ImageGenerator() {
           </button>
         </div>
 
-        <label>
-          {mode === "edit" ? "源图片（必填）" : "参考图片（可选）"}
+        <label htmlFor="f-prompt">
+          {mode === "edit" ? "编辑指令" : "提示词"}
         </label>
-        <div className="upload-row">
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() => fileInputRef.current?.click()}
+        <div className="prompt-wrap">
+          <div
+            className="prompt-media-tray"
+            aria-label={mode === "edit" ? "源图片" : "参考图片"}
           >
-            📁 选择图片
-          </button>
-          {inputImages.length > 0 && (
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={handleClearImages}
-            >
-              清空
-            </button>
-          )}
-          <span className="upload-hint">
-            支持多张，单张 ≤ 8MB；
-            {mode === "edit"
-              ? "编辑模式至少 1 张"
-              : "可不上传，仅作为生成参考"}
-          </span>
+            {inputImages.length === 0 ? (
+              <button
+                type="button"
+                className="prompt-upload-tile"
+                onClick={() => fileInputRef.current?.click()}
+                aria-label={mode === "edit" ? "上传源图片" : "上传参考图片"}
+                title={mode === "edit" ? "上传源图片" : "上传参考图片"}
+              >
+                +
+              </button>
+            ) : (
+              <>
+                {inputImages.map((src, i) => (
+                  <div className="prompt-thumb" key={i}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt={`输入图 ${i + 1}`} />
+                    <button
+                      type="button"
+                      className="prompt-thumb-del"
+                      aria-label={`移除输入图 ${i + 1}`}
+                      onClick={() => handleRemoveImage(i)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="prompt-upload-tile is-compact"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label={mode === "edit" ? "继续上传源图片" : "继续上传参考图片"}
+                  title={mode === "edit" ? "继续上传源图片" : "继续上传参考图片"}
+                >
+                  +
+                </button>
+                {inputImages.length > 1 && (
+                  <button
+                    type="button"
+                    className="prompt-clear-media"
+                    onClick={handleClearImages}
+                  >
+                    清空
+                  </button>
+                )}
+              </>
+            )}
+          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -520,31 +549,6 @@ export default function ImageGenerator() {
             hidden
             onChange={(e) => handleSelectFiles(e.target.files)}
           />
-        </div>
-
-        {inputImages.length > 0 && (
-          <div className="thumbs">
-            {inputImages.map((src, i) => (
-              <div className="thumb" key={i}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={`输入图 ${i + 1}`} />
-                <button
-                  type="button"
-                  className="thumb-del"
-                  aria-label="移除"
-                  onClick={() => handleRemoveImage(i)}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <label htmlFor="f-prompt">
-          {mode === "edit" ? "编辑指令" : "提示词"}
-        </label>
-        <div className="prompt-wrap">
           <textarea
             id="f-prompt"
             placeholder={
